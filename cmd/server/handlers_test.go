@@ -90,7 +90,7 @@ func Test_getParam(t *testing.T) {
 			},
 			want: want{
 				code:   200,
-				answer: "c1:\t527\n",
+				answer: "527\n",
 			},
 		},
 		{
@@ -112,7 +112,7 @@ func Test_getParam(t *testing.T) {
 			},
 			want: want{
 				code:   200,
-				answer: "g1:\t0.00005\n",
+				answer: "0.00005\n",
 			},
 		},
 		{

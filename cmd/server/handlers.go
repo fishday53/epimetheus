@@ -40,7 +40,7 @@ func getParam(res http.ResponseWriter, req *http.Request) {
 	name := chi.URLParam(req, "name")
 	if result, err := getMetric(Storage, kind, name); err == nil {
 		res.WriteHeader(http.StatusOK)
-		fmt.Fprintf(res, "%s:\t%s\n", name, result)
+		fmt.Fprintf(res, "%s\n", result)
 	} else {
 		res.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(res, "Value of %s is absent\n", name)
