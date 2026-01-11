@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -34,10 +35,18 @@ func (n *netAddress) Set(flagValue string) error {
 }
 
 func httpServer() {
-	var addr netAddress = netAddress{Host: "localhost", Port: 8080}
+	var addr netAddress
+	var addr_env string = os.Getenv("ADDRESS")
 
-	flag.Var(&addr, "a", "Listen address. Format host:port")
-	flag.Parse()
+	if addr_env != "" {
+		if err := addr.Set(addr_env); err != nil {
+			panic(err)
+		}
+	} else {
+		addr = netAddress{Host: "localhost", Port: 8080}
+		flag.Var(&addr, "a", "Listen address. Format host:port")
+		flag.Parse()
+	}
 
 	r := chi.NewRouter()
 	r.Get(`/`, getAllParams)
