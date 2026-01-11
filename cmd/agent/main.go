@@ -16,28 +16,26 @@ type Config struct {
 }
 
 func main() {
-
 	var cfg Config
-	var parse bool
 
 	err := env.Parse(&cfg)
 	if err != nil {
 		panic(err)
 	}
+
+	addr := flag.String("a", "localhost:8080", "Server address")
+	reportInterval := flag.Int("r", 10, "Report interval")
+	pollInterval := flag.Int("p", 2, "Poll interval")
+	flag.Parse()
+
 	if cfg.Addr == "" {
-		cfg.Addr = *flag.String("a", "localhost:8080", "Server address")
-		parse = true
+		cfg.Addr = *addr
 	}
 	if cfg.ReportInterval == 0 {
-		cfg.ReportInterval = *flag.Int("r", 10, "Report interval")
-		parse = true
+		cfg.ReportInterval = *reportInterval
 	}
 	if cfg.PollInterval == 0 {
-		cfg.PollInterval = *flag.Int("p", 2, "Poll interval")
-		parse = true
-	}
-	if parse {
-		flag.Parse()
+		cfg.PollInterval = *pollInterval
 	}
 
 	url := "http://" + cfg.Addr + "/update"
