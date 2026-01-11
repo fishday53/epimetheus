@@ -21,14 +21,13 @@ func TestMetricsBatch_getAllRuntimeMetrics(t *testing.T) {
 		},
 		{
 			name:    "Nonexistent metric",
-			list:    []string{"JustRandonString"},
+			list:    []string{"JustRandomString"},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := MetricsBatch{}
-			m.Gauge = make(map[string]gauge)
+			m := NewMetricsBatch()
 			gotErr := m.getAllRuntimeMetrics(tt.list)
 			if gotErr != nil {
 				if !tt.wantErr {
@@ -55,10 +54,8 @@ func TestMetricsBatch_sendAllMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := MetricsBatch{}
-			m.Gauge = make(map[string]gauge)
-			m.Counter = make(map[string]counter)
-			m.Gauge["RandomValue"] = gauge(rand.Float64())
+			m := NewMetricsBatch()
+			m.Gauge["RandomValue"] = rand.Float64()
 			m.Counter["PollCount"] = 0
 
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

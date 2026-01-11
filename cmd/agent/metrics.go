@@ -39,15 +39,19 @@ var metricList = []string{
 	"TotalAlloc",
 }
 
-type gauge float64
-type counter int64
-
-type MetricsBatch struct {
-	Gauge   map[string]gauge
-	Counter map[string]counter
+type metricsBatch struct {
+	Gauge   map[string]float64
+	Counter map[string]int64
 }
 
-func getRuntimeMetric(memstat *runtime.MemStats, name string) (gauge, error) {
+func NewMetricsBatch() *metricsBatch {
+	return &metricsBatch{
+		Gauge:   make(map[string]float64),
+		Counter: make(map[string]int64),
+	}
+}
+
+func getRuntimeMetric(memstat *runtime.MemStats, name string) (float64, error) {
 	v := reflect.ValueOf(*memstat)
 	fieldValue := v.FieldByName(name)
 	if !fieldValue.IsValid() {
@@ -56,18 +60,17 @@ func getRuntimeMetric(memstat *runtime.MemStats, name string) (gauge, error) {
 
 	switch metric := fieldValue.Interface().(type) {
 	case float64:
-		return gauge(metric), nil
+		return metric, nil
 	case uint32:
-		return gauge(metric), nil
+		return float64(metric), nil
 	case uint64:
-		return gauge(metric), nil
+		return float64(metric), nil
 	default:
-		// return fieldValue.Interface().(float64), nil
 		return 0, fmt.Errorf("Unknown type %v", metric)
 	}
 }
 
-func (m *MetricsBatch) getAllRuntimeMetrics(list []string) error {
+func (m *metricsBatch) getAllRuntimeMetrics(list []string) error {
 	var r runtime.MemStats
 	var err error
 	runtime.ReadMemStats(&r)
@@ -93,7 +96,7 @@ func sendMetric(url, kind, name, value string) error {
 	return nil
 }
 
-func (m *MetricsBatch) sendAllMetrics(url string) error {
+func (m *metricsBatch) sendAllMetrics(url string) error {
 	for k, v := range m.Gauge {
 		if err := sendMetric(url, "gauge", k, strconv.FormatFloat(float64(v), 'f', -1, 64)); err != nil {
 			return err
