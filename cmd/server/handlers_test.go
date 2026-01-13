@@ -66,6 +66,9 @@ func Test_setParam(t *testing.T) {
 			r.ServeHTTP(w, request)
 
 			res := w.Result()
+
+			defer request.Body.Close()
+
 			assert.Equal(t, tt.want.code, res.StatusCode)
 		})
 	}
@@ -150,6 +153,9 @@ func Test_getParam(t *testing.T) {
 			r.ServeHTTP(w, request)
 
 			res := w.Result()
+
+			defer request.Body.Close()
+
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			assert.Equal(t, tt.want.answer, w.Body.String())
 		})
@@ -192,6 +198,9 @@ func Test_getAllParams(t *testing.T) {
 			r.ServeHTTP(w, request)
 
 			res := w.Result()
+
+			defer request.Body.Close()
+
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			assert.Equal(t, tt.want.answer, w.Body.String())
 		})

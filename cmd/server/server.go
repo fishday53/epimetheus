@@ -24,7 +24,7 @@ func (n *netAddress) Set(flagValue string) error {
 	var err error
 	params := strings.Split(flagValue, ":")
 	if len(params) != 2 {
-		return fmt.Errorf("Canot parse %s. Must be host:port", flagValue)
+		return fmt.Errorf("canot parse %s. must be host:port", flagValue)
 	}
 	n.Host = params[0]
 	n.Port, err = strconv.Atoi(params[1])
@@ -36,10 +36,10 @@ func (n *netAddress) Set(flagValue string) error {
 
 func httpServer() {
 	var addr netAddress
-	var addr_env string = os.Getenv("ADDRESS")
+	var addrEnv = os.Getenv("ADDRESS")
 
-	if addr_env != "" {
-		if err := addr.Set(addr_env); err != nil {
+	if addrEnv != "" {
+		if err := addr.Set(addrEnv); err != nil {
 			panic(err)
 		}
 	} else {

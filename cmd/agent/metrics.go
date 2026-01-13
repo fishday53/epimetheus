@@ -55,7 +55,7 @@ func getRuntimeMetric(memstat *runtime.MemStats, name string) (float64, error) {
 	v := reflect.ValueOf(*memstat)
 	fieldValue := v.FieldByName(name)
 	if !fieldValue.IsValid() {
-		return 0, errors.New("Value not found")
+		return 0, errors.New("value not found")
 	}
 
 	switch metric := fieldValue.Interface().(type) {
@@ -66,7 +66,7 @@ func getRuntimeMetric(memstat *runtime.MemStats, name string) (float64, error) {
 	case uint64:
 		return float64(metric), nil
 	default:
-		return 0, fmt.Errorf("Unknown type %v", metric)
+		return 0, fmt.Errorf("unknown type %v", metric)
 	}
 }
 
@@ -88,11 +88,12 @@ func (m *metricsBatch) getAllRuntimeMetrics(list []string) error {
 }
 
 func sendMetric(url, kind, name, value string) error {
-	_, err := http.Post(url+"/"+kind+"/"+name+"/"+value, "text/plain", nil)
+	resp, err := http.Post(url+"/"+kind+"/"+name+"/"+value, "text/plain", nil)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return err
 	}
+	defer resp.Body.Close()
 	return nil
 }
 

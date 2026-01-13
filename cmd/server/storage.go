@@ -66,7 +66,7 @@ func (m *memStorage) Set(kind, name, value string) error {
 	case "gauge":
 		m.Gauge[name], err = stringToGauge(value)
 		if err != nil {
-			return fmt.Errorf("Error gauge conversion: %v", err)
+			return fmt.Errorf("error gauge conversion: %v", err)
 		}
 		fmt.Printf("gauge %s=%v\n", name, m.Gauge[name])
 	case "counter":
@@ -75,13 +75,13 @@ func (m *memStorage) Set(kind, name, value string) error {
 		}
 		addition, err := stringToCounter(value)
 		if err != nil {
-			return fmt.Errorf("Error counter conversion: %v", err)
+			return fmt.Errorf("error counter conversion: %v", err)
 		}
 		m.Counter[name] += addition
 		fmt.Printf("cntr %s=%v\n", name, m.Counter[name])
 	default:
 		fmt.Printf("Unsupported value kind\n")
-		return fmt.Errorf("Unsupported value kind: %s", kind)
+		return fmt.Errorf("unsupported value kind: %s", kind)
 	}
 	return nil
 }
@@ -92,16 +92,16 @@ func (m *memStorage) Get(kind, name string) (string, error) {
 		if result, ok := m.Gauge[name]; ok {
 			return gaugeToString(result), nil
 		} else {
-			return "", fmt.Errorf("Gauge value for %s not found", name)
+			return "", fmt.Errorf("gauge value for %s not found", name)
 		}
 	case "counter":
 		if result, ok := m.Counter[name]; ok {
 			return counterToString(result), nil
 		} else {
-			return "", fmt.Errorf("Counter value for %s not found", name)
+			return "", fmt.Errorf("counter value for %s not found", name)
 		}
 	default:
-		return "", fmt.Errorf("Value %s has unsupported kind: %s", name, kind)
+		return "", fmt.Errorf("value %s has unsupported kind: %s", name, kind)
 	}
 }
 
