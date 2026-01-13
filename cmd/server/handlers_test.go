@@ -65,9 +65,8 @@ func Test_setParam(t *testing.T) {
 
 			r.ServeHTTP(w, request)
 
-			res := w.Result()
-
 			defer request.Body.Close()
+			res := w.Result()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
 		})
