@@ -7,7 +7,7 @@ import (
 	"metrics-server/internal/config"
 )
 
-func HttpServer() {
+func HTTPServer() {
 
 	var cfg config.Config
 	cfg.Get()
