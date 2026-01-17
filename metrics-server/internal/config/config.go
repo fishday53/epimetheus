@@ -1,15 +1,16 @@
-package main
+package config
 
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/go-chi/chi/v5"
 )
+
+type Config struct {
+	Addr string `env:"ADDRESS"`
+}
 
 type netAddress struct {
 	Host string
@@ -34,7 +35,7 @@ func (n *netAddress) Set(flagValue string) error {
 	return nil
 }
 
-func httpServer() {
+func (cfg *Config) Get() {
 	var addr netAddress
 	var addrEnv = os.Getenv("ADDRESS")
 
@@ -48,13 +49,5 @@ func httpServer() {
 		flag.Parse()
 	}
 
-	r := chi.NewRouter()
-	r.Get(`/`, getAllParams)
-	r.Get(`/value/{kind}/{name}`, getParam)
-	r.Post(`/update/{kind}/{name}/{value}`, setParam)
-
-	err := http.ListenAndServe(addr.String(), r)
-	if err != nil {
-		panic(err)
-	}
+	cfg.Addr = addr.String()
 }

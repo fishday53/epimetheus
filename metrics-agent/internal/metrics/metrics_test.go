@@ -1,4 +1,4 @@
-package main
+package metrics
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ func TestMetricsBatch_getAllRuntimeMetrics(t *testing.T) {
 	}{
 		{
 			name:    "Existed metrics",
-			list:    metricList, // []string{"Frees"},
+			list:    MetricList, // []string{"Frees"},
 			wantErr: false,
 		},
 		{
@@ -28,7 +28,7 @@ func TestMetricsBatch_getAllRuntimeMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := NewMetricsBatch()
-			gotErr := m.getAllRuntimeMetrics(tt.list)
+			gotErr := m.GetAllRuntimeMetrics(tt.list)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("getAllRuntimeMetrics() failed: %v", gotErr)
@@ -64,7 +64,7 @@ func TestMetricsBatch_sendAllMetrics(t *testing.T) {
 			server := httptest.NewServer(handler)
 			defer server.Close()
 
-			gotErr := m.sendAllMetrics(server.URL)
+			gotErr := m.SendAllMetrics(server.URL)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("sendAllMetrics() failed: %v", gotErr)

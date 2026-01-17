@@ -1,10 +1,7 @@
-package main
+package config
 
 import (
 	"flag"
-	"fmt"
-	"math/rand/v2"
-	"time"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -15,10 +12,9 @@ type Config struct {
 	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
-func main() {
-	var cfg Config
+func (cfg *Config) Get() {
 
-	err := env.Parse(&cfg)
+	err := env.Parse(cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -36,27 +32,5 @@ func main() {
 	}
 	if cfg.PollInterval == 0 {
 		cfg.PollInterval = *pollInterval
-	}
-
-	url := "http://" + cfg.Addr + "/update"
-	metrics := NewMetricsBatch()
-	metrics.Counter["PollCount"] = 0
-
-	for {
-		for i := 0; i < (cfg.ReportInterval / cfg.PollInterval); i++ {
-
-			if err := metrics.getAllRuntimeMetrics(metricList); err != nil {
-				fmt.Println(err)
-			}
-
-			metrics.Counter["PollCount"]++
-			metrics.Gauge["RandomValue"] = rand.Float64()
-
-			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
-		}
-
-		if err := metrics.sendAllMetrics(url); err != nil {
-			fmt.Println(err)
-		}
 	}
 }

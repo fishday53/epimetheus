@@ -1,6 +1,7 @@
-package main
+package handlers
 
 import (
+	"metrics-server/internal/storage/memory"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_setParam(t *testing.T) {
+func Test_SetParam(t *testing.T) {
 	type want struct {
 		code int
 	}
@@ -56,9 +57,9 @@ func Test_setParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Storage = NewMemStorage()
+			ctx := &AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
-			r.Post(`/update/{kind}/{name}/{value}`, setParam)
+			r.Post(`/update/{kind}/{name}/{value}`, ctx.SetParam)
 
 			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -75,21 +76,21 @@ func Test_setParam(t *testing.T) {
 	}
 }
 
-func Test_getParam(t *testing.T) {
+func Test_GetParam(t *testing.T) {
 	type want struct {
 		code   int
 		answer string
 	}
 	tests := []struct {
 		name    string
-		storage memStorage
+		storage memory.MemStorage
 		request string
 		want    want
 	}{
 		{
 			name:    "Existent counter",
 			request: "/value/counter/c1",
-			storage: memStorage{
+			storage: memory.MemStorage{
 				Counter: map[string]int64{"c1": 527},
 			},
 			want: want{
@@ -100,7 +101,7 @@ func Test_getParam(t *testing.T) {
 		{
 			name:    "Nonexistent counter",
 			request: "/value/counter/c2",
-			storage: memStorage{
+			storage: memory.MemStorage{
 				Counter: map[string]int64{"c1": 527},
 			},
 			want: want{
@@ -111,7 +112,7 @@ func Test_getParam(t *testing.T) {
 		{
 			name:    "Existent gauge",
 			request: "/value/gauge/g1",
-			storage: memStorage{
+			storage: memory.MemStorage{
 				Gauge: map[string]float64{"g1": 0.00005},
 			},
 			want: want{
@@ -122,7 +123,7 @@ func Test_getParam(t *testing.T) {
 		{
 			name:    "Nonexistent gauge",
 			request: "/value/gauge/g2",
-			storage: memStorage{
+			storage: memory.MemStorage{
 				Gauge: map[string]float64{"g1": 0.00005},
 			},
 			want: want{
@@ -133,7 +134,7 @@ func Test_getParam(t *testing.T) {
 		{
 			name:    "Bad kind",
 			request: "/value/SomeWrongKind/g1",
-			storage: memStorage{
+			storage: memory.MemStorage{
 				Gauge: map[string]float64{"g1": 0.00005},
 			},
 			want: want{
@@ -144,9 +145,9 @@ func Test_getParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Storage = &tt.storage
+			ctx := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/value/{kind}/{name}`, getParam)
+			r.Get(`/value/{kind}/{name}`, ctx.GetParam)
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -171,14 +172,14 @@ func Test_getAllParams(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		storage memStorage
+		storage memory.MemStorage
 		request string
 		want    want
 	}{
 		{
 			name:    "Simple check",
 			request: "/",
-			storage: memStorage{
+			storage: memory.MemStorage{
 				Counter: map[string]int64{"c1": 527},
 				Gauge:   map[string]float64{"g1": 0.00005},
 			},
@@ -190,9 +191,9 @@ func Test_getAllParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Storage = &tt.storage
+			ctx := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/`, getAllParams)
+			r.Get(`/`, ctx.GetAllParams)
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()

@@ -1,4 +1,4 @@
-package main
+package metrics
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-var metricList = []string{
+var MetricList = []string{
 	"Alloc",
 	"BuckHashSys",
 	"Frees",
@@ -70,7 +70,7 @@ func getRuntimeMetric(memstat *runtime.MemStats, name string) (float64, error) {
 	}
 }
 
-func (m *metricsBatch) getAllRuntimeMetrics(list []string) error {
+func (m *metricsBatch) GetAllRuntimeMetrics(list []string) error {
 	var r runtime.MemStats
 	var err error
 	runtime.ReadMemStats(&r)
@@ -97,7 +97,7 @@ func sendMetric(url, kind, name, value string) error {
 	return nil
 }
 
-func (m *metricsBatch) sendAllMetrics(url string) error {
+func (m *metricsBatch) SendAllMetrics(url string) error {
 	for k, v := range m.Gauge {
 		if err := sendMetric(url, "gauge", k, strconv.FormatFloat(float64(v), 'f', -1, 64)); err != nil {
 			return err
