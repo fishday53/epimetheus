@@ -9,10 +9,15 @@ import (
 
 func HTTPServer() {
 
+	var err error
 	var cfg config.Config
-	cfg.Get()
 
-	err := http.ListenAndServe(cfg.Addr, router.NewMultiplexor())
+	err = cfg.Get()
+	if err != nil {
+		panic(err)
+	}
+
+	err = http.ListenAndServe(cfg.Addr, router.NewMultiplexor())
 	if err != nil {
 		panic(err)
 	}

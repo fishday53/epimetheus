@@ -90,7 +90,6 @@ func (m *metricsBatch) GetAllRuntimeMetrics(list []string) error {
 func sendMetric(url, kind, name, value string) error {
 	resp, err := http.Post(url+"/"+kind+"/"+name+"/"+value, "text/plain", nil)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
 		return err
 	}
 	defer resp.Body.Close()
