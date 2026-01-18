@@ -7,10 +7,12 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 type AppContext struct {
-	DB storage.Repositories
+	DB  storage.Repositories
+	Log *zap.SugaredLogger
 }
 
 func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
