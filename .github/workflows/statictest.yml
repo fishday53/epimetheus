@@ -9,7 +9,7 @@ on:
 jobs:
   statictest:
     runs-on: ubuntu-latest
-    container: golang:1.22
+    container: golang:1.24
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -30,4 +30,19 @@ jobs:
 
       - name: Run statictest
         run: |
+          cd metrics-agent
+          if [ ! -f go.mod ]; then
+            go mod init temp
+          fi
           go vet -vettool=$(which statictest) ./...
+          if [ -f go.mod ] && grep -q "^module temp$" go.mod; then
+            rm go.mod go.sum 2>/dev/null || true
+          fi
+          cd ../metrics-server
+          if [ ! -f go.mod ]; then
+            go mod init temp
+          fi
+          go vet -vettool=$(which statictest) ./...
+          if [ -f go.mod ] && grep -q "^module temp$" go.mod; then
+            rm go.mod go.sum 2>/dev/null || true
+          fi
