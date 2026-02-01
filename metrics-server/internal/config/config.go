@@ -35,13 +35,13 @@ func (n *netAddress) Set(flagValue string) error {
 	return nil
 }
 
-func (cfg *Config) Get() {
+func (cfg *Config) Get() error {
 	var addr netAddress
 	var addrEnv = os.Getenv("ADDRESS")
 
 	if addrEnv != "" {
 		if err := addr.Set(addrEnv); err != nil {
-			panic(err)
+			return err
 		}
 	} else {
 		addr = netAddress{Host: "localhost", Port: 8080}
@@ -50,4 +50,6 @@ func (cfg *Config) Get() {
 	}
 
 	cfg.Addr = addr.String()
+
+	return nil
 }
