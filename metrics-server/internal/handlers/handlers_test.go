@@ -1,55 +1,81 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
+	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
+var testCounter int64 = 527
+var testGauge float64 = 0.00005
+
 func Test_SetParam(t *testing.T) {
 	type want struct {
 		code int
 	}
 	tests := []struct {
-		name    string
-		request string
-		want    want
+		name   string
+		metric storage.Metric
+		want   want
 	}{
 		{
-			name:    "counter",
-			request: "/update/counter/c1/527",
+			name: "counter",
+			metric: storage.Metric{
+				ID:    "c1",
+				MType: "counter",
+				Delta: &testCounter,
+			},
 			want: want{
 				code: 200,
 			},
 		},
 		{
-			name:    "gauge",
-			request: "/update/gauge/g1/-0.1",
+			name: "gauge",
+			metric: storage.Metric{
+				ID:    "g1",
+				MType: "gauge",
+				Value: &testGauge,
+			},
 			want: want{
 				code: 200,
 			},
 		},
 		{
-			name:    "bad kind",
-			request: "/update/something/g1/-0.1",
+			name: "bad kind",
+			metric: storage.Metric{
+				ID:    "g1",
+				MType: "something",
+				Value: &testGauge,
+			},
 			want: want{
 				code: 400,
 			},
 		},
 		{
-			name:    "bad value",
-			request: "/update/gauge/g2/b",
+			name: "bad value",
+			metric: storage.Metric{
+				ID:    "g1",
+				MType: "gauge",
+			},
 			want: want{
 				code: 400,
 			},
 		},
 		{
-			name:    "no name",
-			request: "/update/gauge/b",
+			name: "no name",
+			metric: storage.Metric{
+				ID:    "",
+				MType: "gauge",
+				Value: &testGauge,
+			},
 			want: want{
 				code: 404,
 			},
@@ -59,9 +85,12 @@ func Test_SetParam(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := &AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
-			r.Post(`/update/{kind}/{name}/{value}`, ctx.SetParam)
+			r.Post(`/update/`, ctx.SetParam)
 
-			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
+			jsonData, _ := json.Marshal(tt.metric)
+			reader := bytes.NewReader(jsonData)
+
+			request := httptest.NewRequest(http.MethodPost, "/update/", reader)
 			w := httptest.NewRecorder()
 
 			r.ServeHTTP(w, request)
@@ -84,25 +113,31 @@ func Test_GetParam(t *testing.T) {
 	tests := []struct {
 		name    string
 		storage memory.MemStorage
-		request string
+		request storage.Metric
 		want    want
 	}{
 		{
-			name:    "Existent counter",
-			request: "/value/counter/c1",
+			name: "Existent counter",
+			request: storage.Metric{
+				ID:    "c1",
+				MType: "counter",
+			},
 			storage: memory.MemStorage{
-				Counter: map[string]int64{"c1": 527},
+				Metrics: map[string]memory.MetricParam{"c1": {MType: "counter", Delta: &testCounter}},
 			},
 			want: want{
 				code:   200,
-				answer: "527\n",
+				answer: `{"id":"c1","type":"counter","delta":` + strconv.FormatInt(testCounter, 10) + `}`,
 			},
 		},
 		{
-			name:    "Nonexistent counter",
-			request: "/value/counter/c2",
+			name: "Nonexistent counter",
+			request: storage.Metric{
+				ID:    "c2",
+				MType: "counter",
+			},
 			storage: memory.MemStorage{
-				Counter: map[string]int64{"c1": 527},
+				Metrics: map[string]memory.MetricParam{"c1": {MType: "counter", Delta: &testCounter}},
 			},
 			want: want{
 				code:   404,
@@ -110,21 +145,27 @@ func Test_GetParam(t *testing.T) {
 			},
 		},
 		{
-			name:    "Existent gauge",
-			request: "/value/gauge/g1",
+			name: "Existent gauge",
+			request: storage.Metric{
+				ID:    "g1",
+				MType: "gauge",
+			},
 			storage: memory.MemStorage{
-				Gauge: map[string]float64{"g1": 0.00005},
+				Metrics: map[string]memory.MetricParam{"g1": {MType: "gauge", Value: &testGauge}},
 			},
 			want: want{
 				code:   200,
-				answer: "0.00005\n",
+				answer: `{"id":"g1","type":"gauge","value":` + strconv.FormatFloat(testGauge, 'f', -1, 64) + `}`,
 			},
 		},
 		{
-			name:    "Nonexistent gauge",
-			request: "/value/gauge/g2",
+			name: "Nonexistent gauge",
+			request: storage.Metric{
+				ID:    "g2",
+				MType: "gauge",
+			},
 			storage: memory.MemStorage{
-				Gauge: map[string]float64{"g1": 0.00005},
+				Metrics: map[string]memory.MetricParam{"g1": {MType: "gauge", Value: &testGauge}},
 			},
 			want: want{
 				code:   404,
@@ -132,10 +173,13 @@ func Test_GetParam(t *testing.T) {
 			},
 		},
 		{
-			name:    "Bad kind",
-			request: "/value/SomeWrongKind/g1",
+			name: "Bad kind",
+			request: storage.Metric{
+				ID:    "g1",
+				MType: "SomeWrongKind",
+			},
 			storage: memory.MemStorage{
-				Gauge: map[string]float64{"g1": 0.00005},
+				Metrics: map[string]memory.MetricParam{"g1": {MType: "gauge", Value: &testGauge}},
 			},
 			want: want{
 				code:   404,
@@ -147,9 +191,12 @@ func Test_GetParam(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/value/{kind}/{name}`, ctx.GetParam)
+			r.Post(`/value/`, ctx.GetParam)
 
-			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
+			jsonData, _ := json.Marshal(tt.request)
+			reader := bytes.NewReader(jsonData)
+
+			request := httptest.NewRequest(http.MethodPost, "/value/", reader)
 			w := httptest.NewRecorder()
 
 			r.ServeHTTP(w, request)
@@ -180,12 +227,14 @@ func Test_getAllParams(t *testing.T) {
 			name:    "Simple check",
 			request: "/",
 			storage: memory.MemStorage{
-				Counter: map[string]int64{"c1": 527},
-				Gauge:   map[string]float64{"g1": 0.00005},
+				Metrics: map[string]memory.MetricParam{
+					"g1": {MType: "gauge", Value: &testGauge},
+					"c1": {MType: "counter", Delta: &testCounter},
+				},
 			},
 			want: want{
 				code:   200,
-				answer: "g1:\t0.00005\nc1:\t527\n",
+				answer: `[{"id":"g1","type":"gauge","value":` + strconv.FormatFloat(testGauge, 'f', -1, 64) + `},{"id":"c1","type":"counter","delta":` + strconv.FormatInt(testCounter, 10) + `}]`,
 			},
 		},
 	}

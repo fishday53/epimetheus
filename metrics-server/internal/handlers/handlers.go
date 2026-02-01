@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"metrics-server/internal/storage"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
 
@@ -16,42 +16,68 @@ type AppContext struct {
 }
 
 func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		res.WriteHeader(http.StatusMethodNotAllowed)
+	var metric storage.Metric
+
+	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		log.Println(err.Error())
 		return
 	}
 
-	kind := chi.URLParam(req, "kind")
-	name := chi.URLParam(req, "name")
-	value := chi.URLParam(req, "value")
-
-	if name == "" {
+	if metric.ID == "" {
 		res.WriteHeader(http.StatusNotFound)
 		log.Println("Name is not defined")
 		return
 	}
 
-	err := ctx.DB.Set(kind, name, value)
+	result, err := ctx.DB.Set(&metric)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	res.WriteHeader(http.StatusOK)
-}
 
-func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
-	kind := chi.URLParam(req, "kind")
-	name := chi.URLParam(req, "name")
-
-	result, err := ctx.DB.Get(kind, name)
+	jsonData, err := json.Marshal(result)
 	if err != nil {
-		res.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(res, "Value of %s is absent\n", name)
+		res.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
 		return
 	}
 
 	res.WriteHeader(http.StatusOK)
-	fmt.Fprintf(res, "%s\n", result)
+	fmt.Fprintf(res, "%s", jsonData)
+}
+
+func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
+	var metric storage.Metric
+
+	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		log.Println(err.Error())
+		return
+	}
+
+	if metric.ID == "" {
+		res.WriteHeader(http.StatusNotFound)
+		log.Println("Name is not defined")
+		return
+	}
+
+	result, err := ctx.DB.Get(&metric)
+	if err != nil {
+		res.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(res, "Value of %s is absent\n", metric.ID)
+		return
+	}
+
+	jsonData, err := json.Marshal(result)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
+		return
+	}
+
+	res.WriteHeader(http.StatusOK)
+	fmt.Fprintf(res, "%s", jsonData)
 }
 
 func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) {
@@ -62,8 +88,13 @@ func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	res.WriteHeader(http.StatusOK)
-	for _, s := range result {
-		fmt.Fprintf(res, "%s", s)
+	jsonData, err := json.Marshal(*result)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
+		return
 	}
+
+	res.WriteHeader(http.StatusOK)
+	fmt.Fprintf(res, "%s", jsonData)
 }

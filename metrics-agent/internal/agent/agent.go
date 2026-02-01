@@ -1,0 +1,106 @@
+package agent
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"math/rand/v2"
+	"metrics-agent/internal/config"
+	"metrics-agent/internal/metrics"
+	"net/http"
+	"time"
+)
+
+var tick int64 = 1
+
+var backoffSchedule = []time.Duration{
+	100 * time.Millisecond,
+	500 * time.Millisecond,
+	1 * time.Second,
+}
+
+func sendMetric(url string, metric *metrics.Metric) error {
+
+	jsonData, err := json.Marshal(metric)
+	if err != nil {
+		fmt.Printf("Error in marshaler: %v\n", err)
+		return err
+	}
+	fmt.Println(string(jsonData))
+
+	reader := bytes.NewReader(jsonData)
+
+	for _, backoff := range backoffSchedule {
+		resp, err := http.Post(url, "application/json", reader)
+		if err != nil {
+			fmt.Printf("Error in http/post: %v\n", err)
+			time.Sleep(backoff)
+		} else {
+			defer resp.Body.Close()
+			break
+		}
+	}
+
+	return nil
+}
+
+func Agent() error {
+	var cfg config.Config
+	cfg.Get()
+
+	url := "http://" + cfg.Addr + "/update/"
+
+	for {
+		for i := 0; i < (cfg.ReportInterval / cfg.PollInterval); i++ {
+
+			// RunTime metrics
+			for _, metricName := range metrics.MetricList {
+
+				value, err := metrics.GetRuntimeMetric(metricName)
+				if err != nil {
+					fmt.Printf("%s error: %v\n", metricName, err)
+					return err
+				} else {
+					fmt.Printf("%s=%f\n", metricName, value)
+				}
+
+				metric := metrics.Metric{
+					ID:    metricName,
+					MType: "gauge",
+					Value: &value,
+				}
+
+				err = sendMetric(url, &metric)
+				if err != nil {
+					return err
+				}
+			}
+
+			// Additional counter
+			pollCount := metrics.Metric{
+				ID:    "PollCount",
+				MType: "counter",
+				Delta: &tick,
+			}
+			err := sendMetric(url, &pollCount)
+			if err != nil {
+				return err
+			}
+
+			// Additional gauge
+			rnd := rand.Float64()
+			randomValue := metrics.Metric{
+				ID:    "RandomValue",
+				MType: "gauge",
+				Value: &rnd,
+			}
+			err = sendMetric(url, &randomValue)
+			if err != nil {
+				return err
+			}
+
+			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
+		}
+
+	}
+}

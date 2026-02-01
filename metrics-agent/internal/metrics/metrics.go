@@ -3,11 +3,16 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"reflect"
 	"runtime"
-	"strconv"
 )
+
+type Metric struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+}
 
 var MetricList = []string{
 	"Alloc",
@@ -39,20 +44,11 @@ var MetricList = []string{
 	"TotalAlloc",
 }
 
-type metricsBatch struct {
-	Gauge   map[string]float64
-	Counter map[string]int64
-}
+func GetRuntimeMetric(name string) (float64, error) {
+	var r runtime.MemStats
+	runtime.ReadMemStats(&r)
 
-func NewMetricsBatch() *metricsBatch {
-	return &metricsBatch{
-		Gauge:   make(map[string]float64),
-		Counter: make(map[string]int64),
-	}
-}
-
-func getRuntimeMetric(memstat *runtime.MemStats, name string) (float64, error) {
-	v := reflect.ValueOf(*memstat)
+	v := reflect.ValueOf(r)
 	fieldValue := v.FieldByName(name)
 	if !fieldValue.IsValid() {
 		return 0, errors.New("value not found")
@@ -68,45 +64,4 @@ func getRuntimeMetric(memstat *runtime.MemStats, name string) (float64, error) {
 	default:
 		return 0, fmt.Errorf("unknown type %v", metric)
 	}
-}
-
-func (m *metricsBatch) GetAllRuntimeMetrics(list []string) error {
-	var r runtime.MemStats
-	var err error
-	runtime.ReadMemStats(&r)
-
-	for _, s := range list {
-		m.Gauge[s], err = getRuntimeMetric(&r, s)
-		if err != nil {
-			fmt.Printf("%s error: %v\n", s, err)
-			return err
-		} else {
-			fmt.Printf("%s=%f\n", s, m.Gauge[s])
-		}
-	}
-	return nil
-}
-
-func sendMetric(url, kind, name, value string) error {
-	resp, err := http.Post(url+"/"+kind+"/"+name+"/"+value, "text/plain", nil)
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return err
-	}
-	defer resp.Body.Close()
-	return nil
-}
-
-func (m *metricsBatch) SendAllMetrics(url string) error {
-	for k, v := range m.Gauge {
-		if err := sendMetric(url, "gauge", k, strconv.FormatFloat(float64(v), 'f', -1, 64)); err != nil {
-			return err
-		}
-	}
-	for k, v := range m.Counter {
-		if err := sendMetric(url, "counter", k, strconv.FormatInt(int64(v), 10)); err != nil {
-			return err
-		}
-	}
-	return nil
 }
