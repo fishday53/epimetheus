@@ -23,5 +23,5 @@ func StringToCounter(counter string) (*int64, error) {
 	if err != nil {
 		result = 0
 	}
-	return &result, nil
+	return &result, err
 }
