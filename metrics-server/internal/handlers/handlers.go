@@ -150,8 +150,8 @@ func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	res.WriteHeader(http.StatusOK)
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	res.WriteHeader(http.StatusOK)
 	fmt.Fprintf(res, "%s", jsonData)
 }
 
@@ -184,8 +184,8 @@ func (ctx *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	res.WriteHeader(http.StatusOK)
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	res.WriteHeader(http.StatusOK)
 	fmt.Fprintf(res, "%s", jsonData)
 }
 
@@ -204,7 +204,7 @@ func (ctx *AppContext) GetAllParamsJSON(res http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	res.WriteHeader(http.StatusOK)
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	res.WriteHeader(http.StatusOK)
 	fmt.Fprintf(res, "%s", jsonData)
 }
