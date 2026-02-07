@@ -8,25 +8,24 @@ import (
 
 func NewMultiplexor() *chi.Mux {
 
-	ctxLegacy := handlers.NewAppContext("legacy")
-	ctxJSON := handlers.NewAppContext("json")
+	ctx := handlers.NewAppContext("main")
 
 	r := chi.NewRouter()
 
+	r.Use(ctx.Logger)
+
 	// legacy plaintext API
 	r.Group(func(r chi.Router) {
-		r.Use(ctxLegacy.Logger)
-		r.Get(`/value/{mtype}/{name}`, ctxLegacy.GetParam)
-		r.Post(`/update/{mtype}/{name}/{value}`, ctxLegacy.SetParam)
+		r.Get(`/value/{mtype}/{name}`, ctx.GetParam)
+		r.Post(`/update/{mtype}/{name}/{value}`, ctx.SetParam)
 	})
 
 	// JSON API
 	r.Group(func(r chi.Router) {
-		r.Use(ctxJSON.Logger)
-		r.Use(ctxJSON.CheckContentType)
-		r.Post(`/value/`, ctxJSON.GetParamJSON)
-		r.Post(`/update/`, ctxJSON.SetParamJSON)
-		r.Get(`/`, ctxJSON.GetAllParamsJSON)
+		r.Use(ctx.CheckContentType)
+		r.Post(`/value/`, ctx.GetParamJSON)
+		r.Post(`/update/`, ctx.SetParamJSON)
+		r.Get(`/`, ctx.GetAllParamsJSON)
 	})
 
 	return r
