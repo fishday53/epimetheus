@@ -1,7 +1,5 @@
 package storage
 
-//var InitialDelta int64 = 0
-
 type Metric struct {
 	ID    string   `json:"id"`              // имя метрики
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter

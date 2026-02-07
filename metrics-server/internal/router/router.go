@@ -8,15 +8,6 @@ import (
 
 func NewMultiplexor() *chi.Mux {
 
-	// ctxLegacy := &handlers.AppContext{
-	// 	DB:  memory.NewMemStorage(),
-	// 	Log: log.NewLogger(),
-	// }
-
-	// ctx := &handlers.AppContext{
-	// 	DB:  memory.NewMemStorage(),
-	// 	Log: log.NewLogger(),
-	// }
 	ctxLegacy := handlers.NewAppContext("legacy")
 	ctxJSON := handlers.NewAppContext("json")
 

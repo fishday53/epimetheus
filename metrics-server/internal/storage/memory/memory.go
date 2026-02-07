@@ -64,10 +64,7 @@ func (m *MemStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 			return nil, fmt.Errorf("delta is nil")
 		}
 
-		//incr := *metric.Delta
-		//*m.Metrics[metric.ID].Delta += incr
 		*m.Metrics[metric.ID].Delta += *metric.Delta
-		//m.Metrics[metric.ID] = MetricParam{MType: "counter", Delta: metric.Delta}
 		result.Delta = m.Metrics[metric.ID].Delta
 		log.Printf("storage: %v, cntr %s=%v\n", m, metric.ID, *m.Metrics[metric.ID].Delta)
 

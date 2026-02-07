@@ -30,8 +30,6 @@ func NewAppContext(name string) *AppContext {
 func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
 	var err error
-	//fmt.Println(ctx.DB)
-	//metric := storage.NewMetric("", "", nil, nil)
 
 	if req.Method != http.MethodPost {
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -137,7 +135,6 @@ func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) 
 
 func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
-	//fmt.Println(ctx.DB)
 
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
