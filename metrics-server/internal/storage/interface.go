@@ -1,6 +1,6 @@
 package storage
 
-var InitialDelta int64 = 0
+//var InitialDelta int64 = 0
 
 type Metric struct {
 	ID    string   `json:"id"`              // имя метрики

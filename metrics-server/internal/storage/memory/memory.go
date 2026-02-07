@@ -13,11 +13,13 @@ type MetricParam struct {
 }
 
 type MemStorage struct {
+	Name    string
 	Metrics map[string]MetricParam
 }
 
-func NewMemStorage() *MemStorage {
+func NewMemStorage(name string) *MemStorage {
 	return &MemStorage{
+		Name:    name,
 		Metrics: make(map[string]MetricParam),
 	}
 }
@@ -49,7 +51,8 @@ func (m *MemStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 
 	case "counter":
 		if _, ok := m.Metrics[metric.ID]; !ok {
-			m.Metrics[metric.ID] = MetricParam{MType: "counter", Delta: &storage.InitialDelta}
+			var initialDelta int64 = 0
+			m.Metrics[metric.ID] = MetricParam{MType: "counter", Delta: &initialDelta}
 		} else {
 			if m.Metrics[metric.ID].MType != "counter" {
 				log.Printf("Value type changing is not enabled\n")
@@ -61,10 +64,12 @@ func (m *MemStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 			return nil, fmt.Errorf("delta is nil")
 		}
 
+		//incr := *metric.Delta
+		//*m.Metrics[metric.ID].Delta += incr
 		*m.Metrics[metric.ID].Delta += *metric.Delta
 		//m.Metrics[metric.ID] = MetricParam{MType: "counter", Delta: metric.Delta}
 		result.Delta = m.Metrics[metric.ID].Delta
-		log.Printf("cntr %s=%v\n", metric.ID, *m.Metrics[metric.ID].Delta)
+		log.Printf("storage: %v, cntr %s=%v\n", m, metric.ID, *m.Metrics[metric.ID].Delta)
 
 	default:
 		log.Printf("Unsupported value kind\n")

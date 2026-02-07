@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	epilog "metrics-server/internal/log"
 	"metrics-server/internal/storage"
+	"metrics-server/internal/storage/memory"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,13 +14,24 @@ import (
 )
 
 type AppContext struct {
-	DB  storage.Repositories
-	Log *zap.SugaredLogger
+	Name string
+	DB   storage.Repositories
+	Log  *zap.SugaredLogger
+}
+
+func NewAppContext(name string) *AppContext {
+	return &AppContext{
+		Name: name,
+		DB:   memory.NewMemStorage(name),
+		Log:  epilog.NewLogger(),
+	}
 }
 
 func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
 	var err error
+	//fmt.Println(ctx.DB)
+	//metric := storage.NewMetric("", "", nil, nil)
 
 	if req.Method != http.MethodPost {
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -124,6 +137,7 @@ func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) 
 
 func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
+	//fmt.Println(ctx.DB)
 
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)

@@ -65,7 +65,7 @@ func Test_SetParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: memory.NewMemStorage()}
+			ctx := &AppContext{DB: memory.NewMemStorage("test")}
 			r := chi.NewRouter()
 			r.Post(`/update/{mtype}/{name}/{value}`, ctx.SetParam)
 
@@ -287,7 +287,7 @@ func Test_SetParamJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: memory.NewMemStorage()}
+			ctx := &AppContext{DB: memory.NewMemStorage("test")}
 			r := chi.NewRouter()
 			r.Post(`/update/`, ctx.SetParamJSON)
 
