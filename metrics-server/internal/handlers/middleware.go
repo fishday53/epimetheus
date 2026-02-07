@@ -58,14 +58,8 @@ func (ctx *AppContext) Logger(next http.Handler) http.Handler {
 	})
 }
 
-func (ctx *AppContext) Validator(next http.Handler) http.Handler {
+func (ctx *AppContext) CheckContentType(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			log.Println("Invalid method ", r.Method)
-			return
-		}
 
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(w, "Invalid Content-Type, expected application/json", http.StatusUnsupportedMediaType)

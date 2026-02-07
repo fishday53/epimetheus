@@ -18,13 +18,18 @@ func NewMultiplexor() *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(ctx.Logger)
-	r.Get(`/`, ctx.GetAllParams)
-	// r.Get(`/value/{kind}/{name}`, ctx.GetParam)
-	// r.Post(`/update/{kind}/{name}/{value}`, ctx.SetParam)
+
+	r.Get(`/`, ctx.GetAllParamsJSON)
+
+	// legacy plaintext API
+	r.Get(`/value/{mtype}/{name}`, ctx.GetParam)
+	r.Post(`/update/{mtype}/{name}/{value}`, ctx.SetParam)
+
+	// JSON API
 	r.Group(func(r chi.Router) {
-		r.Use(ctx.Validator)
-		r.Post(`/value/`, ctx.GetParam)
-		r.Post(`/update/`, ctx.SetParam)
+		r.Use(ctx.CheckContentType)
+		r.Post(`/value/`, ctx.GetParamJSON)
+		r.Post(`/update/`, ctx.SetParamJSON)
 	})
 
 	return r
