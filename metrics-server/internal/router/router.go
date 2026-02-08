@@ -29,7 +29,7 @@ func NewMultiplexor() *chi.Mux {
 	})
 
 	//r.Get(`/`, ctx.GetAllParamsJSON)
-	r.Get(`/`, ctx.GetAllParamsJSON)
+	r.Get(`/`, ctx.GetAllParams)
 
 	return r
 }
