@@ -47,7 +47,6 @@ func (m *MemStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 
 		m.Metrics[metric.ID] = MetricParam{MType: "gauge", Value: metric.Value}
 		result.Value = m.Metrics[metric.ID].Value
-		log.Printf("gauge %s=%v\n", metric.ID, m.Metrics[metric.ID].Value)
 
 	case "counter":
 		if _, ok := m.Metrics[metric.ID]; !ok {
@@ -66,7 +65,6 @@ func (m *MemStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 
 		*m.Metrics[metric.ID].Delta += *metric.Delta
 		result.Delta = m.Metrics[metric.ID].Delta
-		log.Printf("storage: %v, cntr %s=%v\n", m, metric.ID, *m.Metrics[metric.ID].Delta)
 
 	default:
 		log.Printf("Unsupported value kind\n")

@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
@@ -28,12 +29,34 @@ func sendMetric(url string, metric *metrics.Metric) error {
 	}
 	fmt.Println(string(jsonData))
 
-	reader := bytes.NewReader(jsonData)
+	//reader := bytes.NewReader(jsonData)
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	if _, err := gw.Write(jsonData); err != nil {
+		fmt.Printf("Error gzipping data: %v\n", err)
+		return err
+	}
+	if err := gw.Close(); err != nil {
+		fmt.Printf("Error closing gzip writer: %v", err)
+		return err
+	}
 
 	for _, backoff := range backoffSchedule {
-		resp, err := http.Post(url, "application/json", reader)
+		//resp, err := http.Post(url, "application/json", reader)
+		req, err := http.NewRequest("POST", url, &buf)
 		if err != nil {
-			fmt.Printf("Error in http/post: %v\n", err)
+			fmt.Printf("Error creating http-request: %v\n", err)
+			time.Sleep(backoff)
+		}
+
+		req.Header.Set("Content-Encoding", "gzip")
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Printf("Error posting query: %v\n", err)
 			time.Sleep(backoff)
 		} else {
 			defer resp.Body.Close()

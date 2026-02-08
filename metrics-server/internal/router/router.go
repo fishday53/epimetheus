@@ -13,6 +13,7 @@ func NewMultiplexor() *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(ctx.Logger)
+	r.Use(ctx.GzipHandler)
 
 	// legacy plaintext API
 	r.Group(func(r chi.Router) {

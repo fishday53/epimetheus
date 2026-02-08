@@ -3,8 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	epilog "metrics-server/internal/log"
+	"metrics-server/internal/log"
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
 	"net/http"
@@ -23,7 +22,7 @@ func NewAppContext(name string) *AppContext {
 	return &AppContext{
 		Name: name,
 		DB:   memory.NewMemStorage(name),
-		Log:  epilog.NewLogger(),
+		Log:  log.NewLogger(),
 	}
 }
 
@@ -40,7 +39,7 @@ func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 
 	if metric.ID == "" {
 		res.WriteHeader(http.StatusNotFound)
-		log.Println("Name is not defined")
+		ctx.Log.Errorln("Name is not defined")
 		return
 	}
 
@@ -53,13 +52,13 @@ func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 		metric.Delta, err = storage.StringToCounter(chi.URLParam(req, "value"))
 	default:
 		res.WriteHeader(http.StatusBadRequest)
-		log.Println("Unsupported metric type")
+		ctx.Log.Errorln("Unsupported metric type")
 		return
 	}
 
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
-		log.Println(err.Error())
+		ctx.Log.Errorln(err.Error())
 		return
 	}
 
@@ -79,7 +78,7 @@ func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
 
 	if metric.ID == "" {
 		res.WriteHeader(http.StatusNotFound)
-		log.Println("Name is not defined")
+		ctx.Log.Errorln("Name is not defined")
 		return
 	}
 
@@ -99,7 +98,7 @@ func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
 		resultString = storage.CounterToString(*result.Delta)
 	default:
 		res.WriteHeader(http.StatusBadRequest)
-		log.Println("Unsupported metric type")
+		ctx.Log.Errorln("Unsupported metric type")
 		return
 	}
 
@@ -126,7 +125,7 @@ func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) 
 			resultString = storage.CounterToString(*s.Delta)
 		default:
 			res.WriteHeader(http.StatusInternalServerError)
-			log.Println("Unsupported metric type")
+			ctx.Log.Errorln("Unsupported metric type")
 			return
 		}
 		fmt.Fprintf(res, "%s:\t%s\n", s.ID, resultString)
@@ -135,16 +134,16 @@ func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) 
 
 func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
-
+	//fmt.Println("body in sendparam:", req.Body)
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
-		log.Println(err.Error())
+		ctx.Log.Errorln(err.Error())
 		return
 	}
 
 	if metric.ID == "" {
 		res.WriteHeader(http.StatusNotFound)
-		log.Println("Name is not defined")
+		ctx.Log.Errorln("Name is not defined")
 		return
 	}
 
@@ -171,13 +170,13 @@ func (ctx *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) 
 
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
-		log.Println(err.Error())
+		ctx.Log.Errorln(err.Error())
 		return
 	}
 
 	if metric.ID == "" {
 		res.WriteHeader(http.StatusNotFound)
-		log.Println("Name is not defined")
+		ctx.Log.Errorln("Name is not defined")
 		return
 	}
 
