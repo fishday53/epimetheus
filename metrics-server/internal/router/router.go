@@ -28,6 +28,7 @@ func NewMultiplexor() *chi.Mux {
 		r.Post(`/update/`, ctx.SetParamJSON)
 	})
 
+	//r.Get(`/`, ctx.GetAllParamsJSON)
 	r.Get(`/`, ctx.GetAllParamsJSON)
 
 	return r

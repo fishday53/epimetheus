@@ -102,6 +102,7 @@ func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	res.Header().Set("Content-Type", "text/html; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
 	fmt.Fprintf(res, "%s\n", resultString)
 }
@@ -116,6 +117,7 @@ func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	res.Header().Set("Content-Type", "text/html; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
 	for _, s := range *result {
 		switch s.MType {

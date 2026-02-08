@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -121,7 +120,7 @@ func (ctx *AppContext) GzipHandler(next http.Handler) http.Handler {
 
 		w.Header().Set("Content-Encoding", "gzip")
 		//ctx.Log.Infoln("gzip to client")
-		fmt.Println("gzip to client")
+		//fmt.Println("gzip to client")
 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gzw}, r)
 	})
 }
