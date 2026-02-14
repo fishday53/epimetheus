@@ -16,13 +16,15 @@ type AppContext struct {
 	Name string
 	DB   storage.Repositories
 	Log  *zap.SugaredLogger
+	Dump *storage.Dump
 }
 
-func NewAppContext(name string) *AppContext {
+func NewAppContext(name string, dump *storage.Dump) *AppContext {
 	return &AppContext{
 		Name: name,
 		DB:   memory.NewMemStorage(name),
 		Log:  log.NewLogger(),
+		Dump: dump,
 	}
 }
 
@@ -67,6 +69,15 @@ func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	if ctx.Dump.Period == 0 {
+		err = ctx.DB.Dump(ctx.Dump.Path)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
 	res.WriteHeader(http.StatusOK)
 }
 
@@ -160,6 +171,14 @@ func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 		res.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
 		return
+	}
+
+	if ctx.Dump.Period == 0 {
+		err = ctx.DB.Dump(ctx.Dump.Path)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")

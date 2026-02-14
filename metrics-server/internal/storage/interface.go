@@ -10,4 +10,11 @@ type Repositories interface {
 	Set(metric *Metric) (*Metric, error)
 	Get(metric *Metric) (*Metric, error)
 	GetAll() (*[]Metric, error)
+	Dump(filepath string) error
+	Restore(filepath string) error
+}
+
+type Dump struct {
+	Path   string
+	Period int
 }

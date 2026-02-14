@@ -1,9 +1,12 @@
 package memory
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"metrics-server/internal/storage"
+	"os"
 )
 
 type MetricParam struct {
@@ -107,4 +110,29 @@ func (m *MemStorage) GetAll() (*[]storage.Metric, error) {
 		})
 	}
 	return &result, nil
+}
+
+func (m *MemStorage) Dump(filepath string) error {
+	data, err := json.MarshalIndent(m.Metrics, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath, data, 0666)
+}
+
+func (m *MemStorage) Restore(filepath string) error {
+	var data []byte
+	var err error
+	data, err = os.ReadFile(filepath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			log.Printf("File %s does not exist\n", filepath)
+			return nil
+		}
+		return err
+	}
+	if err = json.Unmarshal(data, &m.Metrics); err != nil {
+		return err
+	}
+	return nil
 }
