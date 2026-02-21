@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"metrics-server/internal/handlers"
 	"metrics-server/internal/router"
 	"metrics-server/internal/storage"
@@ -24,15 +25,18 @@ func HTTPServer() {
 
 	err = cfg.Get()
 	if err != nil {
-		panic(err)
+		log.Fatalf("%v", err)
+		return
 	}
 
 	ctx := handlers.NewAppContext("main", &storage.Dump{Path: cfg.FileStoragePath, Period: cfg.StoreInterval})
+	defer ctx.Log.Sync()
 
 	if cfg.Restore {
 		err := ctx.DB.Restore(cfg.FileStoragePath)
 		if err != nil {
-			panic(err)
+			ctx.Log.Fatalf("%v", err)
+			return
 		}
 	}
 
@@ -42,6 +46,7 @@ func HTTPServer() {
 
 	err = http.ListenAndServe(cfg.Addr, router.NewMultiplexer(ctx))
 	if err != nil {
-		panic(err)
+		ctx.Log.Fatalf("%v", err)
+		return
 	}
 }
