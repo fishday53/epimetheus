@@ -29,7 +29,6 @@ func sendMetric(url string, metric *metrics.Metric) error {
 	}
 	fmt.Println(string(jsonData))
 
-	//reader := bytes.NewReader(jsonData)
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
 	if _, err := gw.Write(jsonData); err != nil {
@@ -42,11 +41,11 @@ func sendMetric(url string, metric *metrics.Metric) error {
 	}
 
 	for _, backoff := range backoffSchedule {
-		//resp, err := http.Post(url, "application/json", reader)
 		req, err := http.NewRequest("POST", url, &buf)
 		if err != nil {
 			fmt.Printf("Error creating http-request: %v\n", err)
 			time.Sleep(backoff)
+			continue
 		}
 
 		req.Header.Set("Content-Encoding", "gzip")
@@ -56,6 +55,7 @@ func sendMetric(url string, metric *metrics.Metric) error {
 
 		resp, err := client.Do(req)
 		if err != nil {
+			defer resp.Body.Close()
 			fmt.Printf("Error posting query: %v\n", err)
 			time.Sleep(backoff)
 		} else {
