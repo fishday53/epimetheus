@@ -55,7 +55,6 @@ func sendMetric(url string, metric *metrics.Metric) error {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			defer resp.Body.Close()
 			fmt.Printf("Error posting query: %v\n", err)
 			time.Sleep(backoff)
 		} else {
