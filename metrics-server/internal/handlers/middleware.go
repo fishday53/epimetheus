@@ -84,7 +84,6 @@ func (ctx *AppContext) CheckContentType(next http.Handler) http.Handler {
 
 func (ctx *AppContext) GzipHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//fmt.Println("we're here")
 		if r.Header.Get("Content-Encoding") == "gzip" {
 			gzr, err := gzip.NewReader(r.Body)
 			if err != nil {
@@ -93,20 +92,11 @@ func (ctx *AppContext) GzipHandler(next http.Handler) http.Handler {
 				return
 			}
 			defer gzr.Close()
-			//ctx.Log.Infoln("gzip from client")
-			//fmt.Println("gzip from client")
-			// originalBody := r.Body
-			// defer originalBody.Close()
-			// fmt.Println("bedore:", r.Body)
+
 			r.Body = gzr
-			// fmt.Println("adfter:", r.Body)
-			// r.ContentLength = -1
-			// r.Header.Del("Content-Encoding")
 		}
 
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			//ctx.Log.Infoln("no gzip to client")
-			//fmt.Println("no gzip to client")
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -119,8 +109,7 @@ func (ctx *AppContext) GzipHandler(next http.Handler) http.Handler {
 		defer gzw.Close()
 
 		w.Header().Set("Content-Encoding", "gzip")
-		//ctx.Log.Infoln("gzip to client")
-		//fmt.Println("gzip to client")
+
 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gzw}, r)
 	})
 }

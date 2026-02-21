@@ -8,8 +8,6 @@ import (
 
 func NewMultiplexor(ctx *handlers.AppContext) *chi.Mux {
 
-	//ctx := handlers.NewAppContext("main")
-
 	r := chi.NewRouter()
 
 	r.Use(ctx.Logger)

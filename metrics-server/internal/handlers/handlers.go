@@ -147,7 +147,7 @@ func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) 
 
 func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
-	//fmt.Println("body in sendparam:", req.Body)
+
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		ctx.Log.Errorln(err.Error())
