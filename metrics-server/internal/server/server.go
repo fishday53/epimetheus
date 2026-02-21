@@ -40,7 +40,7 @@ func HTTPServer() {
 		go Dumper(ctx)
 	}
 
-	err = http.ListenAndServe(cfg.Addr, router.NewMultiplexor(ctx))
+	err = http.ListenAndServe(cfg.Addr, router.NewMultiplexer(ctx))
 	if err != nil {
 		panic(err)
 	}

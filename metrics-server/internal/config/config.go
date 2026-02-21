@@ -28,7 +28,7 @@ func (n *netAddress) Set(flagValue string) error {
 	var err error
 	params := strings.Split(flagValue, ":")
 	if len(params) != 2 {
-		return fmt.Errorf("canot parse %s. must be host:port", flagValue)
+		return fmt.Errorf("cannot parse %s. must be host:port", flagValue)
 	}
 	n.Host = params[0]
 	n.Port, err = strconv.Atoi(params[1])

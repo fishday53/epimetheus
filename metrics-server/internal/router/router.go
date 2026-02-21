@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func NewMultiplexor(ctx *handlers.AppContext) *chi.Mux {
+func NewMultiplexer(ctx *handlers.AppContext) *chi.Mux {
 
 	r := chi.NewRouter()
 
