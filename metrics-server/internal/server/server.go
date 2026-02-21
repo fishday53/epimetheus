@@ -4,7 +4,6 @@ import (
 	"log"
 	"metrics-server/internal/handlers"
 	"metrics-server/internal/router"
-	"metrics-server/internal/storage"
 	"net/http"
 	"time"
 
@@ -13,8 +12,8 @@ import (
 
 func Dumper(ctx *handlers.AppContext) {
 	for {
-		ctx.DB.Dump(ctx.Dump.Path)
-		time.Sleep(time.Duration(ctx.Dump.Period) * time.Second)
+		ctx.DB.Dump(ctx.Cfg.FileStoragePath)
+		time.Sleep(time.Duration(ctx.Cfg.StoreInterval) * time.Second)
 	}
 }
 
@@ -29,7 +28,7 @@ func HTTPServer() {
 		return
 	}
 
-	ctx := handlers.NewAppContext("main", &storage.Dump{Path: cfg.FileStoragePath, Period: cfg.StoreInterval})
+	ctx := handlers.NewAppContext("main", &cfg)
 
 	if cfg.Restore {
 		err := ctx.DB.Restore(cfg.FileStoragePath)

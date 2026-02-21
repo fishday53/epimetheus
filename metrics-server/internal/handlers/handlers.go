@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"metrics-server/internal/config"
 	"metrics-server/internal/log"
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
@@ -16,15 +17,15 @@ type AppContext struct {
 	Name string
 	DB   storage.Repositories
 	Log  *zap.SugaredLogger
-	Dump *storage.Dump
+	Cfg  *config.Config
 }
 
-func NewAppContext(name string, dump *storage.Dump) *AppContext {
+func NewAppContext(name string, cfg *config.Config) *AppContext {
 	return &AppContext{
 		Name: name,
 		DB:   memory.NewMemStorage(name),
 		Log:  log.NewLogger(),
-		Dump: dump,
+		Cfg:  cfg,
 	}
 }
 
@@ -70,8 +71,8 @@ func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if ctx.Dump.Period == 0 {
-		err = ctx.DB.Dump(ctx.Dump.Path)
+	if ctx.Cfg.StoreInterval == 0 {
+		err = ctx.DB.Dump(ctx.Cfg.FileStoragePath)
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
 			return
@@ -173,8 +174,8 @@ func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	if ctx.Dump.Period == 0 {
-		err = ctx.DB.Dump(ctx.Dump.Path)
+	if ctx.Cfg.StoreInterval == 0 {
+		err = ctx.DB.Dump(ctx.Cfg.FileStoragePath)
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
 			return

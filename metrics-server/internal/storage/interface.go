@@ -13,8 +13,3 @@ type Repositories interface {
 	Dump(filepath string) error
 	Restore(filepath string) error
 }
-
-type Dump struct {
-	Path   string
-	Period int
-}
