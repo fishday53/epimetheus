@@ -30,7 +30,6 @@ func HTTPServer() {
 	}
 
 	ctx := handlers.NewAppContext("main", &storage.Dump{Path: cfg.FileStoragePath, Period: cfg.StoreInterval})
-	//defer ctx.Log.Sync()
 
 	if cfg.Restore {
 		err := ctx.DB.Restore(cfg.FileStoragePath)
