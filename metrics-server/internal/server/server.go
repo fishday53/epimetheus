@@ -33,7 +33,7 @@ func HTTPServer() {
 
 	ctx, err := handlers.NewAppContext("main", &cfg)
 	if err != nil {
-		ctx.Log.Fatalf("%v", err)
+		log.Fatalf("%v", err)
 		return
 	}
 
