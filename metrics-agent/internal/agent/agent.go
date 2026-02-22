@@ -5,10 +5,12 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand/v2"
 	"metrics-agent/internal/config"
 	"metrics-agent/internal/metrics"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -24,26 +26,22 @@ func sendMetric(url string, metric *metrics.Metric) error {
 
 	jsonData, err := json.Marshal(metric)
 	if err != nil {
-		fmt.Printf("Error in marshaler: %v\n", err)
-		return err
+		return fmt.Errorf("Error in marshaller: %v\n", err)
 	}
-	fmt.Println(string(jsonData))
 
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
 	if _, err := gw.Write(jsonData); err != nil {
-		fmt.Printf("Error gzipping data: %v\n", err)
-		return err
+		return fmt.Errorf("Error gzipping data: %v\n", err)
 	}
 	if err := gw.Close(); err != nil {
-		fmt.Printf("Error closing gzip writer: %v", err)
-		return err
+		return fmt.Errorf("Error closing gzip writer: %v", err)
 	}
 
 	for _, backoff := range backoffSchedule {
 		req, err := http.NewRequest("POST", url, &buf)
 		if err != nil {
-			fmt.Printf("Error creating http-request: %v\n", err)
+			log.Printf("Error creating http-request: %v\n", err)
 			time.Sleep(backoff)
 			continue
 		}
@@ -55,7 +53,7 @@ func sendMetric(url string, metric *metrics.Metric) error {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			fmt.Printf("Error posting query: %v\n", err)
+			log.Printf("Error posting query: %v\n", err)
 			time.Sleep(backoff)
 		} else {
 			defer resp.Body.Close()
@@ -68,7 +66,13 @@ func sendMetric(url string, metric *metrics.Metric) error {
 
 func Agent() error {
 	var cfg config.Config
-	cfg.Get()
+
+	log.SetOutput(os.Stdout)
+
+	if err := cfg.Get(); err != nil {
+		log.Fatalf("Cannot get configuration. Error:%v\n", err)
+		return err
+	}
 
 	url := "http://" + cfg.Addr + "/update/"
 
@@ -80,10 +84,10 @@ func Agent() error {
 
 				value, err := metrics.GetRuntimeMetric(metricName)
 				if err != nil {
-					fmt.Printf("%s error: %v\n", metricName, err)
+					log.Printf("%s error: %v\n", metricName, err)
 					return err
 				} else {
-					fmt.Printf("%s=%f\n", metricName, value)
+					log.Printf("%s=%f\n", metricName, value)
 				}
 
 				metric := metrics.Metric{
@@ -94,6 +98,7 @@ func Agent() error {
 
 				err = sendMetric(url, &metric)
 				if err != nil {
+					log.Fatalf("Metric send failed. Metric: %s, Error:%v\n", metricName, err)
 					return err
 				}
 			}
@@ -106,6 +111,7 @@ func Agent() error {
 			}
 			err := sendMetric(url, &pollCount)
 			if err != nil {
+				log.Fatalf("Metric send failed. Metric: PollCount, Error:%v\n", err)
 				return err
 			}
 
@@ -118,6 +124,7 @@ func Agent() error {
 			}
 			err = sendMetric(url, &randomValue)
 			if err != nil {
+				log.Fatalf("Metric send failed. Metric: RandomValue, Error:%v\n", err)
 				return err
 			}
 

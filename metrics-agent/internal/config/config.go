@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -12,11 +13,11 @@ type Config struct {
 	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
-func (cfg *Config) Get() {
+func (cfg *Config) Get() error {
 
 	err := env.Parse(cfg)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("Config parse error:%v\n", err)
 	}
 
 	addr := flag.String("a", "localhost:8080", "Server address")
@@ -33,4 +34,6 @@ func (cfg *Config) Get() {
 	if cfg.PollInterval == 0 {
 		cfg.PollInterval = *pollInterval
 	}
+
+	return nil
 }
