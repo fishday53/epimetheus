@@ -31,7 +31,11 @@ func HTTPServer() {
 		return
 	}
 
-	ctx := handlers.NewAppContext("main", &cfg)
+	ctx, err := handlers.NewAppContext("main", &cfg)
+	if err != nil {
+		ctx.Log.Fatalf("%v", err)
+		return
+	}
 
 	if cfg.Restore {
 		err := ctx.DB.Restore(cfg.FileStoragePath)

@@ -9,6 +9,7 @@ import (
 	"metrics-server/internal/log"
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
+	"metrics-server/internal/storage/postgres"
 	"net/http"
 	"time"
 
@@ -25,13 +26,24 @@ type AppContext struct {
 	Cfg  *config.Config
 }
 
-func NewAppContext(name string, cfg *config.Config) *AppContext {
-	return &AppContext{
+func NewAppContext(name string, cfg *config.Config) (*AppContext, error) {
+	var err error
+	a := AppContext{
 		Name: name,
-		DB:   memory.NewMemStorage(name),
 		Log:  log.NewLogger(),
 		Cfg:  cfg,
 	}
+
+	if cfg.DSN == "" {
+		a.DB = memory.NewMemStorage(name)
+	} else {
+		a.DB, err = postgres.NewPsqlStorage(name, cfg.DSN)
+		if err != nil {
+			return nil, fmt.Errorf("cannot initialize new app context: %v", err)
+		}
+	}
+
+	return &a, nil
 }
 
 func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
