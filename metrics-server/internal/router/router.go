@@ -2,19 +2,31 @@ package router
 
 import (
 	"metrics-server/internal/handlers"
-	"metrics-server/internal/storage/memory"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func NewMultiplexor() *chi.Mux {
-
-	ctx := &handlers.AppContext{DB: memory.NewMemStorage()}
+func NewMultiplexer(ctx *handlers.AppContext) *chi.Mux {
 
 	r := chi.NewRouter()
-	r.Get(`/`, ctx.GetAllParams)
-	r.Get(`/value/{kind}/{name}`, ctx.GetParam)
-	r.Post(`/update/{kind}/{name}/{value}`, ctx.SetParam)
+
+	r.Use(ctx.Logger)
+	r.Use(ctx.GzipHandler)
+
+	// legacy plaintext API
+	r.Group(func(r chi.Router) {
+		r.Get(`/value/{mtype}/{name}`, ctx.GetParam)
+		r.Post(`/update/{mtype}/{name}/{value}`, ctx.SetParam)
+		r.Get(`/`, ctx.GetAllParams)
+		r.Get(`/ping`, ctx.CheckDBConnect)
+	})
+
+	// JSON API
+	r.Group(func(r chi.Router) {
+		r.Use(ctx.CheckContentType)
+		r.Post(`/value/`, ctx.GetParamJSON)
+		r.Post(`/update/`, ctx.SetParamJSON)
+	})
 
 	return r
 }

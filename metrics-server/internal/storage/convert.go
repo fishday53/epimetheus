@@ -10,18 +10,18 @@ func CounterToString(counter int64) string {
 	return strconv.FormatInt(counter, 10)
 }
 
-func StringToGauge(gauge string) (float64, error) {
+func StringToGauge(gauge string) (*float64, error) {
 	result, err := strconv.ParseFloat(gauge, 64)
 	if err != nil {
-		return 0.0, err
+		result = 0.0
 	}
-	return result, nil
+	return &result, err
 }
 
-func StringToCounter(counter string) (int64, error) {
+func StringToCounter(counter string) (*int64, error) {
 	result, err := strconv.ParseInt(counter, 10, 64)
 	if err != nil {
-		return 0, err
+		result = 0
 	}
-	return result, nil
+	return &result, err
 }

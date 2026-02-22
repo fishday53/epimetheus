@@ -1,76 +1,138 @@
 package memory
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"metrics-server/internal/storage"
+	"os"
 )
 
-type MemStorage struct {
-	Gauge   map[string]float64
-	Counter map[string]int64
+type MetricParam struct {
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
-func NewMemStorage() *MemStorage {
+type MemStorage struct {
+	Name    string
+	Metrics map[string]MetricParam
+}
+
+func NewMemStorage(name string) *MemStorage {
 	return &MemStorage{
-		Gauge:   make(map[string]float64),
-		Counter: make(map[string]int64),
+		Name:    name,
+		Metrics: make(map[string]MetricParam),
 	}
 }
 
-func (m *MemStorage) Set(kind, name, value string) error {
-	var err error
+func (m *MemStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 
-	switch kind {
+	result := storage.Metric{
+		ID:    metric.ID,
+		MType: metric.MType,
+	}
+
+	switch metric.MType {
+
 	case "gauge":
-		m.Gauge[name], err = storage.StringToGauge(value)
-		if err != nil {
-			return fmt.Errorf("error gauge conversion: %v", err)
+		if _, ok := m.Metrics[metric.ID]; ok {
+			if m.Metrics[metric.ID].MType != "gauge" {
+				log.Printf("Value type changing is not enabled\n")
+				return nil, fmt.Errorf("value type changing is not enabled: %s", metric.MType)
+			}
 		}
-		log.Printf("gauge %s=%v\n", name, m.Gauge[name])
+		if metric.Value == nil {
+			log.Printf("Value is nil\n")
+			return nil, fmt.Errorf("value is nil")
+		}
+
+		m.Metrics[metric.ID] = MetricParam{MType: "gauge", Value: metric.Value}
+		result.Value = m.Metrics[metric.ID].Value
+
 	case "counter":
-		if _, ok := m.Counter[name]; !ok {
-			m.Counter[name] = 0
+		if _, ok := m.Metrics[metric.ID]; !ok {
+			var initialDelta int64 = 0
+			m.Metrics[metric.ID] = MetricParam{MType: "counter", Delta: &initialDelta}
+		} else {
+			if m.Metrics[metric.ID].MType != "counter" {
+				log.Printf("Value type changing is not enabled\n")
+				return nil, fmt.Errorf("value type changing is not enabled: %s", metric.MType)
+			}
 		}
-		addition, err := storage.StringToCounter(value)
-		if err != nil {
-			return fmt.Errorf("error counter conversion: %v", err)
+		if metric.Delta == nil {
+			log.Printf("Delta is nil\n")
+			return nil, fmt.Errorf("delta is nil")
 		}
-		m.Counter[name] += addition
-		log.Printf("cntr %s=%v\n", name, m.Counter[name])
+
+		*m.Metrics[metric.ID].Delta += *metric.Delta
+		result.Delta = m.Metrics[metric.ID].Delta
+
 	default:
 		log.Printf("Unsupported value kind\n")
-		return fmt.Errorf("unsupported value kind: %s", kind)
+		return nil, fmt.Errorf("unsupported value kind: %s", metric.MType)
+	}
+
+	return &result, nil
+}
+
+func (m *MemStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
+
+	if _, ok := m.Metrics[metric.ID]; !ok {
+		return nil, fmt.Errorf("%s not found", metric.ID)
+	}
+	if m.Metrics[metric.ID].MType != metric.MType {
+		log.Printf("Value type is wrong\n")
+		return nil, fmt.Errorf("value type is wrong: %s", metric.MType)
+	}
+
+	switch metric.MType {
+	case "gauge":
+		metric.Value = m.Metrics[metric.ID].Value
+	case "counter":
+		metric.Delta = m.Metrics[metric.ID].Delta
+	default:
+		return nil, fmt.Errorf("value %s has unsupported kind: %s", metric.ID, metric.MType)
+	}
+
+	return metric, nil
+}
+
+func (m *MemStorage) GetAll() (*[]storage.Metric, error) {
+	result := []storage.Metric{}
+	for k, v := range m.Metrics {
+		result = append(result, storage.Metric{
+			ID:    k,
+			MType: v.MType,
+			Delta: v.Delta,
+			Value: v.Value,
+		})
+	}
+	return &result, nil
+}
+
+func (m *MemStorage) Dump(filepath string) error {
+	data, err := json.MarshalIndent(m.Metrics, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error in dump marshaller: %v", err)
+	}
+	return os.WriteFile(filepath, data, 0666)
+}
+
+func (m *MemStorage) Restore(filepath string) error {
+	var data []byte
+	var err error
+	data, err = os.ReadFile(filepath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			log.Printf("File %s does not exist\n", filepath)
+			return nil
+		}
+		return fmt.Errorf("cannot read file %s for restoration: %v", filepath, err)
+	}
+	if err = json.Unmarshal(data, &m.Metrics); err != nil {
+		return fmt.Errorf("cannot unmarshal file %s data for restoration: %v", filepath, err)
 	}
 	return nil
-}
-
-func (m *MemStorage) Get(kind, name string) (string, error) {
-	switch kind {
-	case "gauge":
-		if result, ok := m.Gauge[name]; ok {
-			return storage.GaugeToString(result), nil
-		} else {
-			return "", fmt.Errorf("gauge value for %s not found", name)
-		}
-	case "counter":
-		if result, ok := m.Counter[name]; ok {
-			return storage.CounterToString(result), nil
-		} else {
-			return "", fmt.Errorf("counter value for %s not found", name)
-		}
-	default:
-		return "", fmt.Errorf("value %s has unsupported kind: %s", name, kind)
-	}
-}
-
-func (m *MemStorage) GetAll() ([]string, error) {
-	result := []string{}
-	for k, v := range m.Gauge {
-		result = append(result, k+":\t"+storage.GaugeToString(v)+"\n")
-	}
-	for k, v := range m.Counter {
-		result = append(result, k+":\t"+storage.CounterToString(v)+"\n")
-	}
-	return result, nil
 }
