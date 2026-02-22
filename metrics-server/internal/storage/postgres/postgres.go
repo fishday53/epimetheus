@@ -33,7 +33,7 @@ func NewPsqlStorage(name string, dsn string) (*PsqlStorage, error) {
 
 func (p *PsqlStorage) Migrate() error {
 	query := `
-	CREATE TABLE IF NOT EXISTS ? (
+	CREATE TABLE IF NOT EXISTS $1 (
 		id VARCHAR(255) NOT NULL PRIMARY KEY,
 		mtype VARCHAR(255) NOT NULL,
 		delta BIGINT DEFAULT 0,
@@ -105,7 +105,7 @@ func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 
 func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
 
-	query := "SELECT delta, value FROM ? WHERE id = ? and mtype = ?"
+	query := "SELECT delta, value FROM $1 WHERE id = $2 and mtype = $3"
 
 	row := p.DB.QueryRow(query, table, metric.ID, metric.MType)
 	err := row.Scan(metric.Delta, metric.Value)
@@ -122,7 +122,7 @@ func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
 func (p *PsqlStorage) GetAll() (*[]storage.Metric, error) {
 	result := []storage.Metric{}
 
-	query := "SELECT id, mtype, delta, value FROM ?"
+	query := "SELECT id, mtype, delta, value FROM $1"
 
 	rows, err := p.DB.Query(query, table)
 	if err != nil {
