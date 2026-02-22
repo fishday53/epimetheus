@@ -47,7 +47,7 @@ func (cfg *Config) Get() error {
 
 	if addrEnv != "" {
 		if err = addr.Set(addrEnv); err != nil {
-			return err
+			return fmt.Errorf("cannot set address: %v", err)
 		}
 	} else {
 		addr = netAddress{Host: "localhost", Port: 8080}
@@ -57,7 +57,7 @@ func (cfg *Config) Get() error {
 	if storeInterval != "" {
 		cfg.StoreInterval, err = strconv.Atoi(storeInterval)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot set store interval: %v", err)
 		}
 	} else {
 		cfg.StoreInterval = *flag.Int("i", 300, "Store interval. Format int, default 300.")
@@ -72,7 +72,7 @@ func (cfg *Config) Get() error {
 	if restore != "" {
 		cfg.Restore, err = strconv.ParseBool(restore)
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot set restore weather: %v", err)
 		}
 	} else {
 		cfg.Restore = *flag.Bool("r", true, "Restore data from disk on start. Format bool, default true.")

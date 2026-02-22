@@ -5,6 +5,7 @@ import (
 	"metrics-server/internal/handlers"
 	"metrics-server/internal/router"
 	"net/http"
+	"os"
 	"time"
 
 	"metrics-server/internal/config"
@@ -21,6 +22,8 @@ func HTTPServer() {
 
 	var err error
 	var cfg config.Config
+
+	log.SetOutput(os.Stdout)
 
 	err = cfg.Get()
 	if err != nil {

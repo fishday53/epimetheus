@@ -115,7 +115,7 @@ func (m *MemStorage) GetAll() (*[]storage.Metric, error) {
 func (m *MemStorage) Dump(filepath string) error {
 	data, err := json.MarshalIndent(m.Metrics, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("error in dump marshaller: %v", err)
 	}
 	return os.WriteFile(filepath, data, 0666)
 }
@@ -129,10 +129,10 @@ func (m *MemStorage) Restore(filepath string) error {
 			log.Printf("File %s does not exist\n", filepath)
 			return nil
 		}
-		return err
+		return fmt.Errorf("cannot read file %s for restoration: %v", filepath, err)
 	}
 	if err = json.Unmarshal(data, &m.Metrics); err != nil {
-		return err
+		return fmt.Errorf("cannot unmarshal file %s data for restoration: %v", filepath, err)
 	}
 	return nil
 }
