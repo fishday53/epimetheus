@@ -26,16 +26,16 @@ func sendMetric(url string, metric *metrics.Metric) error {
 
 	jsonData, err := json.Marshal(metric)
 	if err != nil {
-		return fmt.Errorf("Error in marshaller: %v\n", err)
+		return fmt.Errorf("error in marshaller: %v", err)
 	}
 
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
 	if _, err := gw.Write(jsonData); err != nil {
-		return fmt.Errorf("Error gzipping data: %v\n", err)
+		return fmt.Errorf("error gzipping data: %v", err)
 	}
 	if err := gw.Close(); err != nil {
-		return fmt.Errorf("Error closing gzip writer: %v", err)
+		return fmt.Errorf("error closing gzip writer: %v", err)
 	}
 
 	for _, backoff := range backoffSchedule {

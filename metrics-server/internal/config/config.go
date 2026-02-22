@@ -33,7 +33,7 @@ func (n *netAddress) Set(flagValue string) error {
 	n.Host = params[0]
 	n.Port, err = strconv.Atoi(params[1])
 	if err != nil {
-		return err
+		return fmt.Errorf("port definition error:%v", err)
 	}
 	return nil
 }

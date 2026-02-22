@@ -17,7 +17,7 @@ func (cfg *Config) Get() error {
 
 	err := env.Parse(cfg)
 	if err != nil {
-		return fmt.Errorf("Config parse error:%v\n", err)
+		return fmt.Errorf("config parse error:%v", err)
 	}
 
 	addr := flag.String("a", "localhost:8080", "Server address")
