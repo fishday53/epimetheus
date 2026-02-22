@@ -18,6 +18,7 @@ func NewMultiplexer(ctx *handlers.AppContext) *chi.Mux {
 		r.Get(`/value/{mtype}/{name}`, ctx.GetParam)
 		r.Post(`/update/{mtype}/{name}/{value}`, ctx.SetParam)
 		r.Get(`/`, ctx.GetAllParams)
+		r.Get(`/ping`, ctx.CheckDBConnect)
 	})
 
 	// JSON API

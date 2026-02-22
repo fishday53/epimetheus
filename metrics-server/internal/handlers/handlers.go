@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"metrics-server/internal/config"
@@ -8,6 +10,9 @@ import (
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
 	"net/http"
+	"time"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -239,4 +244,28 @@ func (ctx *AppContext) GetAllParamsJSON(res http.ResponseWriter, req *http.Reque
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
 	fmt.Fprintf(res, "%s", jsonData)
+}
+
+func (ctx *AppContext) CheckDBConnect(res http.ResponseWriter, req *http.Request) {
+
+	if ctx.Cfg.DSN == "" {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	db, err := sql.Open("pgx", ctx.Cfg.DSN)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	c, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	if err = db.PingContext(c); err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	res.WriteHeader(http.StatusOK)
 }
