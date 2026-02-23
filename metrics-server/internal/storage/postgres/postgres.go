@@ -73,13 +73,13 @@ func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 
 	case "gauge":
 
-		*result.Value = *metric.Value
+		result.Value = metric.Value
 
 		query := fmt.Sprintf(`
-		INSERT INTO %s (id, value) VALUES ($1, $2)
+		INSERT INTO %s (id, mtype, value) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
-		DO UPDATE SET value = $2 WHERE id = $1`, table)
-		_, err := p.DB.Exec(query, result.ID, *result.Value)
+		DO UPDATE SET value = $3`, table)
+		_, err := p.DB.Exec(query, result.ID, result.MType, *result.Value)
 		if err != nil {
 			return nil, fmt.Errorf("cannot set value: %v", err)
 		}
@@ -90,10 +90,10 @@ func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 		*result.Delta += *metric.Delta
 
 		query := fmt.Sprintf(`
-		INSERT INTO %s (id, delta) VALUES ($1, $2)
+		INSERT INTO %s (id, mtype, delta) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
-		DO UPDATE SET delta = $2 WHERE id = $1`, table)
-		_, err := p.DB.Exec(query, result.ID, *result.Delta)
+		DO UPDATE SET delta = $3`, table)
+		_, err := p.DB.Exec(query, result.ID, result.MType, *result.Delta)
 		if err != nil {
 			return nil, fmt.Errorf("cannot set delta: %v", err)
 		}
@@ -106,17 +106,22 @@ func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 }
 
 func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
+	var delta int64
+	var value float64
 
-	query := fmt.Sprintf("SELECT delta, value FROM %s WHERE id = $1 and mtype = $2", table)
+	query := fmt.Sprintf("SELECT delta, value FROM %s WHERE id = $1 AND mtype = $2", table)
 
 	row := p.DB.QueryRow(query, metric.ID, metric.MType)
-	err := row.Scan(metric.Delta, metric.Value)
+	err := row.Scan(&delta, &value)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("%s not found", metric.ID)
 		}
 		return nil, fmt.Errorf("sql query error: %v", err)
 	}
+
+	metric.Delta = &delta
+	metric.Value = &value
 
 	return metric, nil
 }
@@ -133,11 +138,15 @@ func (p *PsqlStorage) GetAll() (*[]storage.Metric, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		metric := storage.Metric{}
-		if err := rows.Scan(&metric.ID, &metric.MType, metric.Delta, metric.Value); err != nil {
+		var id string
+		var mtype string
+		var delta int64
+		var value float64
+		if err := rows.Scan(&id, &mtype, &delta, &value); err != nil {
 			return nil, fmt.Errorf("cannot process a row: %v", err)
 		}
-		result = append(result, metric)
+
+		result = append(result, storage.Metric{ID: id, MType: mtype, Delta: &delta, Value: &value})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("cannot process all rows: %v", err)

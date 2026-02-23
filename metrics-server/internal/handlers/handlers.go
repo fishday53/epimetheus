@@ -168,7 +168,7 @@ func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
-		ctx.Log.Errorln(err.Error())
+		ctx.Log.Errorln("Cannot decode request:", err)
 		return
 	}
 
@@ -181,6 +181,7 @@ func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 	result, err := ctx.DB.Set(&metric)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
+		ctx.Log.Errorln("Cannot set metric:", err)
 		return
 	}
 
@@ -188,6 +189,7 @@ func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
+		ctx.Log.Errorln("Error in marshaller:", err)
 		return
 	}
 
@@ -195,6 +197,7 @@ func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 		err = ctx.DB.Dump(ctx.Cfg.FileStoragePath)
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
+			ctx.Log.Errorln("Dump error:", err)
 			return
 		}
 	}
@@ -223,13 +226,15 @@ func (ctx *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) 
 	if err != nil {
 		res.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(res, "Value of %s is absent\n", metric.ID)
+		ctx.Log.Errorln("Cannot get metric:", err)
 		return
 	}
 
 	jsonData, err := json.Marshal(result)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
+		fmt.Fprintf(res, "Error in marshaller: %v\n", err)
+		ctx.Log.Errorln("Error in marshaller:", err)
 		return
 	}
 
@@ -243,13 +248,15 @@ func (ctx *AppContext) GetAllParamsJSON(res http.ResponseWriter, req *http.Reque
 	if err != nil {
 		res.WriteHeader(http.StatusBadGateway)
 		fmt.Fprintf(res, "Something went wrong\n")
+		ctx.Log.Errorln("Cannot get all metrics:", err)
 		return
 	}
 
 	jsonData, err := json.Marshal(*result)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
+		fmt.Fprintf(res, "Error in marshaller: %v\n", err)
+		ctx.Log.Errorln("Error in marchaller:", err)
 		return
 	}
 
@@ -268,6 +275,7 @@ func (ctx *AppContext) CheckDBConnect(res http.ResponseWriter, req *http.Request
 	db, err := sql.Open("pgx", ctx.Cfg.DSN)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
+		ctx.Log.Errorln("DB check open failed:", err)
 		return
 	}
 	defer db.Close()
@@ -276,7 +284,7 @@ func (ctx *AppContext) CheckDBConnect(res http.ResponseWriter, req *http.Request
 	defer cancel()
 	if err = db.PingContext(c); err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
-		return
+		ctx.Log.Errorln("DB check test failed:", err)
 	}
 
 	res.WriteHeader(http.StatusOK)
