@@ -27,13 +27,13 @@ func HTTPServer() {
 
 	err = cfg.Get()
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Printf("%v", err)
 		return
 	}
 
 	ctx, err := handlers.NewAppContext("main", &cfg)
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Printf("%v", err)
 		return
 	}
 

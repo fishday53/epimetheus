@@ -70,7 +70,7 @@ func Agent() error {
 	log.SetOutput(os.Stdout)
 
 	if err := cfg.Get(); err != nil {
-		log.Fatalf("Cannot get configuration. Error:%v\n", err)
+		log.Printf("Cannot get configuration. Error:%v\n", err)
 		return err
 	}
 
@@ -85,7 +85,6 @@ func Agent() error {
 				value, err := metrics.GetRuntimeMetric(metricName)
 				if err != nil {
 					log.Printf("%s error: %v\n", metricName, err)
-					return err
 				} else {
 					log.Printf("%s=%f\n", metricName, value)
 				}
