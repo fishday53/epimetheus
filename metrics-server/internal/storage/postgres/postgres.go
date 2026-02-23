@@ -38,7 +38,7 @@ func (p *PsqlStorage) Migrate() error {
 		id VARCHAR(255) NOT NULL PRIMARY KEY,
 		mtype VARCHAR(255) NOT NULL,
 		delta BIGINT DEFAULT 0,
-		value FLOAT8 DEFAULT 0.0
+		value FLOAT8 DEFAULT 0.0;
 	`, table)
 	_, err := p.DB.Exec(query)
 	if err != nil {
@@ -107,7 +107,7 @@ func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 
 func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
 
-	query := fmt.Sprintf("SELECT delta, value FROM %s WHERE id = $1 and mtype = $2", table)
+	query := fmt.Sprintf("SELECT delta, value FROM %s WHERE id = $1 and mtype = $2;", table)
 
 	row := p.DB.QueryRow(query, metric.ID, metric.MType)
 	err := row.Scan(metric.Delta, metric.Value)
@@ -124,7 +124,7 @@ func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
 func (p *PsqlStorage) GetAll() (*[]storage.Metric, error) {
 	result := []storage.Metric{}
 
-	query := fmt.Sprintf("SELECT id, mtype, delta, value FROM %s", table)
+	query := fmt.Sprintf("SELECT id, mtype, delta, value FROM %s;", table)
 
 	rows, err := p.DB.Query(query)
 	if err != nil {
