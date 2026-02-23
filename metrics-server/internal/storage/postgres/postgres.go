@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"metrics-server/internal/storage"
+	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -48,59 +49,60 @@ func (p *PsqlStorage) Migrate() error {
 
 func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 
-	result := storage.Metric{
-		ID:    metric.ID,
-		MType: metric.MType,
+	result, err := p.Get(metric)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			result = &storage.Metric{
+				ID:    metric.ID,
+				MType: metric.MType,
+			}
+			if metric.MType == "counter" {
+				var initialDelta int64 = 0
+				result.Delta = &initialDelta
+			}
+		} else {
+			return nil, fmt.Errorf("cannot check metric: %v", err)
+		}
 	}
 
-	// not implemented yet
-	// 	switch metric.MType {
+	if metric.MType != result.MType {
+		return nil, fmt.Errorf("value type changing is not enabled: %s", metric.MType)
+	}
 
-	// 	case "gauge":
+	switch metric.MType {
 
-	// 		query := `
-	// INSERT INTO ? (id, mtype, delta) VALUES ($1, $2, $3)
-	// ON CONFLICT (id)
-	// DO UPDATE SET delta = $3;`
+	case "gauge":
 
-	// 		if _, ok := m.Metrics[metric.ID]; ok {
-	// 			if m.Metrics[metric.ID].MType != "gauge" {
-	// 				log.Printf("Value type changing is not enabled\n")
-	// 				return nil, fmt.Errorf("value type changing is not enabled: %s", metric.MType)
-	// 			}
-	// 		}
-	// 		if metric.Value == nil {
-	// 			log.Printf("Value is nil\n")
-	// 			return nil, fmt.Errorf("value is nil")
-	// 		}
+		*result.Value = *metric.Value
 
-	// 		m.Metrics[metric.ID] = MetricParam{MType: "gauge", Value: metric.Value}
-	// 		result.Value = m.Metrics[metric.ID].Value
+		query := `
+		INSERT INTO $1 (id, value) VALUES ($2, $3)
+		ON CONFLICT (id)
+		DO UPDATE SET value = $3 WHERE id = $2;`
+		_, err := p.DB.Exec(query, table, result.ID, *result.Value)
+		if err != nil {
+			return nil, fmt.Errorf("cannot set value: %v", err)
+		}
+		result.Value = metric.Value
 
-	// 	case "counter":
-	// 		if _, ok := m.Metrics[metric.ID]; !ok {
-	// 			var initialDelta int64 = 0
-	// 			m.Metrics[metric.ID] = MetricParam{MType: "counter", Delta: &initialDelta}
-	// 		} else {
-	// 			if m.Metrics[metric.ID].MType != "counter" {
-	// 				log.Printf("Value type changing is not enabled\n")
-	// 				return nil, fmt.Errorf("value type changing is not enabled: %s", metric.MType)
-	// 			}
-	// 		}
-	// 		if metric.Delta == nil {
-	// 			log.Printf("Delta is nil\n")
-	// 			return nil, fmt.Errorf("delta is nil")
-	// 		}
+	case "counter":
 
-	// 		*m.Metrics[metric.ID].Delta += *metric.Delta
-	// 		result.Delta = m.Metrics[metric.ID].Delta
+		*result.Delta += *metric.Delta
 
-	// 	default:
-	// 		log.Printf("Unsupported value kind\n")
-	// 		return nil, fmt.Errorf("unsupported value kind: %s", metric.MType)
-	// 	}
+		query := `
+		INSERT INTO $1 (id, delta) VALUES ($2, $3)
+		ON CONFLICT (id)
+		DO UPDATE SET delta = $3 WHERE id = $2;`
+		_, err := p.DB.Exec(query, table, result.ID, *result.Delta)
+		if err != nil {
+			return nil, fmt.Errorf("cannot set delta: %v", err)
+		}
 
-	return &result, nil
+	default:
+		return nil, fmt.Errorf("unsupported value kind: %s", metric.MType)
+	}
+
+	return result, nil
 }
 
 func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
