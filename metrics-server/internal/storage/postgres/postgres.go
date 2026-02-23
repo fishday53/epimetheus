@@ -38,11 +38,11 @@ func (p *PsqlStorage) Migrate() error {
 		id VARCHAR(255) NOT NULL PRIMARY KEY,
 		mtype VARCHAR(255) NOT NULL,
 		delta BIGINT DEFAULT 0,
-		value FLOAT8 DEFAULT 0.0;
+		value FLOAT8 DEFAULT 0.0)
 	`, table)
 	_, err := p.DB.Exec(query)
 	if err != nil {
-		return fmt.Errorf("cannot create table: %v", err)
+		return fmt.Errorf("cannot create table %s: %v", query, err)
 	}
 	return nil
 }
@@ -78,7 +78,7 @@ func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 		query := fmt.Sprintf(`
 		INSERT INTO %s (id, value) VALUES ($1, $2)
 		ON CONFLICT (id)
-		DO UPDATE SET value = $2 WHERE id = $1;`, table)
+		DO UPDATE SET value = $2 WHERE id = $1`, table)
 		_, err := p.DB.Exec(query, result.ID, *result.Value)
 		if err != nil {
 			return nil, fmt.Errorf("cannot set value: %v", err)
@@ -92,7 +92,7 @@ func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 		query := fmt.Sprintf(`
 		INSERT INTO %s (id, delta) VALUES ($1, $2)
 		ON CONFLICT (id)
-		DO UPDATE SET delta = $2 WHERE id = $1;`, table)
+		DO UPDATE SET delta = $2 WHERE id = $1`, table)
 		_, err := p.DB.Exec(query, result.ID, *result.Delta)
 		if err != nil {
 			return nil, fmt.Errorf("cannot set delta: %v", err)
@@ -107,7 +107,7 @@ func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 
 func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
 
-	query := fmt.Sprintf("SELECT delta, value FROM %s WHERE id = $1 and mtype = $2;", table)
+	query := fmt.Sprintf("SELECT delta, value FROM %s WHERE id = $1 and mtype = $2", table)
 
 	row := p.DB.QueryRow(query, metric.ID, metric.MType)
 	err := row.Scan(metric.Delta, metric.Value)
@@ -124,7 +124,7 @@ func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
 func (p *PsqlStorage) GetAll() (*[]storage.Metric, error) {
 	result := []storage.Metric{}
 
-	query := fmt.Sprintf("SELECT id, mtype, delta, value FROM %s;", table)
+	query := fmt.Sprintf("SELECT id, mtype, delta, value FROM %s", table)
 
 	rows, err := p.DB.Query(query)
 	if err != nil {
