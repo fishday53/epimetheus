@@ -1,7 +1,7 @@
 package main
 
-import "metrics-agent/internal/processor"
+import "metrics-agent/internal/agent"
 
 func main() {
-	processor.MetricsProcessor()
+	agent.Agent()
 }
