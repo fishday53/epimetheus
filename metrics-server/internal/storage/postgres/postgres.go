@@ -40,7 +40,7 @@ func (p *PsqlStorage) Migrate() error {
 		delta BIGINT DEFAULT 0,
 		value FLOAT8 DEFAULT 0.0
 	`, table)
-	_, err := p.DB.Exec(query, table)
+	_, err := p.DB.Exec(query)
 	if err != nil {
 		return fmt.Errorf("cannot create table: %v", err)
 	}
@@ -126,7 +126,7 @@ func (p *PsqlStorage) GetAll() (*[]storage.Metric, error) {
 
 	query := fmt.Sprintf("SELECT id, mtype, delta, value FROM %s", table)
 
-	rows, err := p.DB.Query(query, table)
+	rows, err := p.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error in query for all metrics: %v", err)
 	}
