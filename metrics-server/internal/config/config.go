@@ -13,6 +13,7 @@ type Config struct {
 	StoreInterval   int    `env:"STORE_INTERVAL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         bool   `env:"RESTORE"`
+	DSN             string `env:"DATABASE_DSN"`
 }
 
 type netAddress struct {
@@ -45,6 +46,8 @@ func (cfg *Config) Get() error {
 	var restore = os.Getenv("RESTORE")
 	var err error
 
+	cfg.DSN = os.Getenv("DATABASE_DSN")
+
 	if addrEnv != "" {
 		if err = addr.Set(addrEnv); err != nil {
 			return fmt.Errorf("cannot set address: %v", err)
@@ -76,6 +79,10 @@ func (cfg *Config) Get() error {
 		}
 	} else {
 		cfg.Restore = *flag.Bool("r", true, "Restore data from disk on start. Format bool, default true.")
+	}
+
+	if cfg.DSN == "" {
+		cfg.DSN = *flag.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
 	}
 
 	flag.Parse()
