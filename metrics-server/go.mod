@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/caarlos0/env v3.5.0+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

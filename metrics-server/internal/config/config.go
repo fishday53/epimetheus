@@ -3,9 +3,10 @@ package config
 import (
 	"flag"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
+
+	"github.com/caarlos0/env"
 )
 
 type Config struct {
@@ -40,54 +41,44 @@ func (n *netAddress) Set(flagValue string) error {
 }
 
 func (cfg *Config) Get() error {
-	var addr netAddress
-	var addrEnv = os.Getenv("ADDRESS")
-	var storeInterval = os.Getenv("STORE_INTERVAL")
-	var restore = os.Getenv("RESTORE")
-	var err error
+	addr := netAddress{Host: "localhost", Port: 8080}
 
-	cfg.DSN = os.Getenv("DATABASE_DSN")
-
-	if addrEnv != "" {
-		if err = addr.Set(addrEnv); err != nil {
-			return fmt.Errorf("cannot set address: %v", err)
-		}
-	} else {
-		addr = netAddress{Host: "localhost", Port: 8080}
-		flag.Var(&addr, "a", "Listen address. Format host:port, default localhost:8080")
+	err := env.Parse(cfg)
+	if err != nil {
+		return fmt.Errorf("cannot parse env: %v", err)
 	}
 
-	if storeInterval != "" {
-		cfg.StoreInterval, err = strconv.Atoi(storeInterval)
-		if err != nil {
-			return fmt.Errorf("cannot set store interval: %v", err)
-		}
-	} else {
-		cfg.StoreInterval = *flag.Int("i", 300, "Store interval. Format int, default 300.")
-	}
-
-	cfg.FileStoragePath = os.Getenv("FILE_STORAGE_PATH")
-
-	if cfg.FileStoragePath == "" {
-		cfg.FileStoragePath = *flag.String("f", "metrics.dmp", "File to store data. Format string, default metrics.dmp.")
-	}
-
-	if restore != "" {
-		cfg.Restore, err = strconv.ParseBool(restore)
-		if err != nil {
-			return fmt.Errorf("cannot set restore weather: %v", err)
-		}
-	} else {
-		cfg.Restore = *flag.Bool("r", true, "Restore data from disk on start. Format bool, default true.")
-	}
-
-	if cfg.DSN == "" {
-		cfg.DSN = *flag.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
-	}
+	flag.Var(&addr, "a", "Listen address. Format host:port, default localhost:8080")
+	storeIntervalFlag := flag.Int("i", 300, "Store interval. Format int, default 300.")
+	restoreFlag := flag.Bool("r", true, "Restore data from disk on start. Format bool, default true.")
+	fileStoragePathFlag := flag.String("f", "metrics.dmp", "File to store data. Format string, default metrics.dmp.")
+	dsnFlag := flag.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
 
 	flag.Parse()
 
-	cfg.Addr = addr.String()
+	if cfg.Addr != "" {
+		if err = addr.Set(cfg.Addr); err != nil {
+			return fmt.Errorf("cannot set address: %v", err)
+		}
+	} else {
+		cfg.Addr = addr.String()
+	}
+
+	if cfg.StoreInterval == 0 {
+		cfg.StoreInterval = *storeIntervalFlag
+	}
+
+	if cfg.Restore == false {
+		cfg.Restore = *restoreFlag
+	}
+
+	if cfg.FileStoragePath == "" {
+		cfg.FileStoragePath = *fileStoragePathFlag
+	}
+
+	if cfg.DSN == "" {
+		cfg.DSN = *dsnFlag
+	}
 
 	return nil
 }
