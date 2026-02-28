@@ -12,12 +12,11 @@ import (
 const table = "metrics"
 
 type PsqlStorage struct {
-	Name string
-	DB   *sql.DB
+	DB *sql.DB
 }
 
-func NewPsqlStorage(name string, dsn string) (*PsqlStorage, error) {
-	p := PsqlStorage{Name: name}
+func NewPsqlStorage(dsn string) (*PsqlStorage, error) {
+	p := PsqlStorage{}
 	var err error
 
 	p.DB, err = sql.Open("pgx", dsn)

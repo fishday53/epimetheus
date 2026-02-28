@@ -20,24 +20,22 @@ import (
 )
 
 type AppContext struct {
-	Name string
-	DB   storage.Repositories
-	Log  *zap.SugaredLogger
-	Cfg  *config.Config
+	DB  storage.Repositories
+	Log *zap.SugaredLogger
+	Cfg *config.Config
 }
 
-func NewAppContext(name string, cfg *config.Config) (*AppContext, error) {
+func NewAppContext(cfg *config.Config) (*AppContext, error) {
 	var err error
 	a := AppContext{
-		Name: name,
-		Log:  log.NewLogger(),
-		Cfg:  cfg,
+		Log: log.NewLogger(),
+		Cfg: cfg,
 	}
 
 	if cfg.DSN == "" {
-		a.DB = memory.NewMemStorage(name)
+		a.DB = memory.NewMemStorage()
 	} else {
-		a.DB, err = postgres.NewPsqlStorage(name, cfg.DSN)
+		a.DB, err = postgres.NewPsqlStorage(cfg.DSN)
 		if err != nil {
 			return nil, fmt.Errorf("cannot initialize new app context: %v", err)
 		}

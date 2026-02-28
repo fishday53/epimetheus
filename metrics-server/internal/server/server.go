@@ -31,7 +31,7 @@ func HTTPServer() {
 		return
 	}
 
-	ctx, err := handlers.NewAppContext("main", &cfg)
+	ctx, err := handlers.NewAppContext(&cfg)
 	if err != nil {
 		log.Printf("%v", err)
 		return

@@ -16,13 +16,11 @@ type MetricParam struct {
 }
 
 type MemStorage struct {
-	Name    string
 	Metrics map[string]MetricParam
 }
 
-func NewMemStorage(name string) *MemStorage {
+func NewMemStorage() *MemStorage {
 	return &MemStorage{
-		Name:    name,
 		Metrics: make(map[string]MetricParam),
 	}
 }
