@@ -3,7 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
-	"metrics-server/usecase"
+	"metrics-server/internal/usecase"
 	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"

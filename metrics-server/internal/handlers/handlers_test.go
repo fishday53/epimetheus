@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
-	"metrics-server/usecase"
+	"metrics-server/internal/usecase"
 	"net/http"
 	"net/http/httptest"
 	"strconv"

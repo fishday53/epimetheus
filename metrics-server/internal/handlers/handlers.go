@@ -10,7 +10,7 @@ import (
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
 	"metrics-server/internal/storage/postgres"
-	"metrics-server/usecase"
+	"metrics-server/internal/usecase"
 	"net/http"
 	"time"
 

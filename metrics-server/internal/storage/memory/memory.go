@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"metrics-server/usecase"
+	"metrics-server/internal/usecase"
 	"os"
 )
 
