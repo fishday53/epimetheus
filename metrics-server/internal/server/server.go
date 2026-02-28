@@ -11,10 +11,10 @@ import (
 	"metrics-server/internal/config"
 )
 
-func Dumper(ctx *handlers.AppContext) {
+func Dumper(app *handlers.AppContext) {
 	for {
-		ctx.DB.Dump(ctx.Cfg.FileStoragePath)
-		time.Sleep(time.Duration(ctx.Cfg.StoreInterval) * time.Second)
+		app.DB.Dump(app.Cfg.FileStoragePath)
+		time.Sleep(time.Duration(app.Cfg.StoreInterval) * time.Second)
 	}
 }
 
@@ -31,27 +31,27 @@ func HTTPServer() {
 		return
 	}
 
-	ctx, err := handlers.NewAppContext(&cfg)
+	app, err := handlers.NewAppContext(&cfg)
 	if err != nil {
 		log.Printf("%v", err)
 		return
 	}
 
 	if cfg.Restore {
-		err := ctx.DB.Restore(cfg.FileStoragePath)
+		err := app.DB.Restore(cfg.FileStoragePath)
 		if err != nil {
-			ctx.Log.Fatalf("%v", err)
+			app.Log.Fatalf("%v", err)
 			return
 		}
 	}
 
 	if cfg.StoreInterval > 0 {
-		go Dumper(ctx)
+		go Dumper(app)
 	}
 
-	err = http.ListenAndServe(cfg.Addr, router.NewMultiplexer(ctx))
+	err = http.ListenAndServe(cfg.Addr, router.NewMultiplexer(app))
 	if err != nil {
-		ctx.Log.Fatalf("%v", err)
+		app.Log.Fatalf("%v", err)
 		return
 	}
 }

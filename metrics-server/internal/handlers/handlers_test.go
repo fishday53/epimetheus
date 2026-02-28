@@ -65,9 +65,9 @@ func Test_SetParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: memory.NewMemStorage()}
+			app := &AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
-			r.Post(`/update/{mtype}/{name}/{value}`, ctx.SetParam)
+			r.Post(`/update/{mtype}/{name}/{value}`, app.SetParam)
 
 			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -153,9 +153,9 @@ func Test_GetParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: &tt.storage}
+			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/value/{mtype}/{name}`, ctx.GetParam)
+			r.Get(`/value/{mtype}/{name}`, app.GetParam)
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -201,9 +201,9 @@ func Test_getAllParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: &tt.storage}
+			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/`, ctx.GetAllParams)
+			r.Get(`/`, app.GetAllParams)
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -287,9 +287,9 @@ func Test_SetParamJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: memory.NewMemStorage()}
+			app := &AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
-			r.Post(`/update/`, ctx.SetParamJSON)
+			r.Post(`/update/`, app.SetParamJSON)
 
 			jsonData, _ := json.Marshal(tt.metric)
 			reader := bytes.NewReader(jsonData)
@@ -393,9 +393,9 @@ func Test_GetParamJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: &tt.storage}
+			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Post(`/value/`, ctx.GetParamJSON)
+			r.Post(`/value/`, app.GetParamJSON)
 
 			jsonData, _ := json.Marshal(tt.request)
 			reader := bytes.NewReader(jsonData)
@@ -444,9 +444,9 @@ func Test_getAllParamsJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: &tt.storage}
+			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/`, ctx.GetAllParamsJSON)
+			r.Get(`/`, app.GetAllParamsJSON)
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()

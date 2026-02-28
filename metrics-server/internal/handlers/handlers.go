@@ -44,7 +44,7 @@ func NewAppContext(cfg *config.Config) (*AppContext, error) {
 	return &a, nil
 }
 
-func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
+func (app *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
 	var err error
 
@@ -57,7 +57,7 @@ func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 
 	if metric.ID == "" {
 		res.WriteHeader(http.StatusNotFound)
-		ctx.Log.Errorln("Name is not defined")
+		app.Log.Errorln("Name is not defined")
 		return
 	}
 
@@ -70,24 +70,24 @@ func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 		metric.Delta, err = storage.StringToCounter(chi.URLParam(req, "value"))
 	default:
 		res.WriteHeader(http.StatusBadRequest)
-		ctx.Log.Errorln("Unsupported metric type")
+		app.Log.Errorln("Unsupported metric type")
 		return
 	}
 
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
-		ctx.Log.Errorln(err.Error())
+		app.Log.Errorln(err.Error())
 		return
 	}
 
-	_, err = ctx.DB.Set(&metric)
+	_, err = app.DB.Set(&metric)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if ctx.Cfg.StoreInterval == 0 {
-		err = ctx.DB.Dump(ctx.Cfg.FileStoragePath)
+	if app.Cfg.StoreInterval == 0 {
+		err = app.DB.Dump(app.Cfg.FileStoragePath)
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
 			return
@@ -97,7 +97,7 @@ func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
+func (app *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
 	var resultString string
 
@@ -105,13 +105,13 @@ func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
 
 	if metric.ID == "" {
 		res.WriteHeader(http.StatusNotFound)
-		ctx.Log.Errorln("Name is not defined")
+		app.Log.Errorln("Name is not defined")
 		return
 	}
 
 	metric.MType = chi.URLParam(req, "mtype")
 
-	result, err := ctx.DB.Get(&metric)
+	result, err := app.DB.Get(&metric)
 	if err != nil {
 		res.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(res, "Value of %s is absent\n", metric.ID)
@@ -125,7 +125,7 @@ func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
 		resultString = storage.CounterToString(*result.Delta)
 	default:
 		res.WriteHeader(http.StatusBadRequest)
-		ctx.Log.Errorln("Unsupported metric type")
+		app.Log.Errorln("Unsupported metric type")
 		return
 	}
 
@@ -134,10 +134,10 @@ func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(res, "%s\n", resultString)
 }
 
-func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) {
+func (app *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) {
 	var resultString string
 
-	result, err := ctx.DB.GetAll()
+	result, err := app.DB.GetAll()
 	if err != nil {
 		res.WriteHeader(http.StatusBadGateway)
 		fmt.Fprintf(res, "Something went wrong\n")
@@ -154,32 +154,32 @@ func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) 
 			resultString = storage.CounterToString(*s.Delta)
 		default:
 			res.WriteHeader(http.StatusInternalServerError)
-			ctx.Log.Errorln("Unsupported metric type")
+			app.Log.Errorln("Unsupported metric type")
 			return
 		}
 		fmt.Fprintf(res, "%s:\t%s\n", s.ID, resultString)
 	}
 }
 
-func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) {
+func (app *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
 
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
-		ctx.Log.Errorln("Cannot decode request:", err)
+		app.Log.Errorln("Cannot decode request:", err)
 		return
 	}
 
 	if metric.ID == "" {
 		res.WriteHeader(http.StatusNotFound)
-		ctx.Log.Errorln("Name is not defined")
+		app.Log.Errorln("Name is not defined")
 		return
 	}
 
-	result, err := ctx.DB.Set(&metric)
+	result, err := app.DB.Set(&metric)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
-		ctx.Log.Errorln("Cannot set metric:", err)
+		app.Log.Errorln("Cannot set metric:", err)
 		return
 	}
 
@@ -187,15 +187,15 @@ func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
-		ctx.Log.Errorln("Error in marshaller:", err)
+		app.Log.Errorln("Error in marshaller:", err)
 		return
 	}
 
-	if ctx.Cfg.StoreInterval == 0 {
-		err = ctx.DB.Dump(ctx.Cfg.FileStoragePath)
+	if app.Cfg.StoreInterval == 0 {
+		err = app.DB.Dump(app.Cfg.FileStoragePath)
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
-			ctx.Log.Errorln("Dump error:", err)
+			app.Log.Errorln("Dump error:", err)
 			return
 		}
 	}
@@ -205,26 +205,26 @@ func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 	fmt.Fprintf(res, "%s", jsonData)
 }
 
-func (ctx *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) {
+func (app *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) {
 	var metric storage.Metric
 
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
-		ctx.Log.Errorln(err.Error())
+		app.Log.Errorln(err.Error())
 		return
 	}
 
 	if metric.ID == "" {
 		res.WriteHeader(http.StatusNotFound)
-		ctx.Log.Errorln("Name is not defined")
+		app.Log.Errorln("Name is not defined")
 		return
 	}
 
-	result, err := ctx.DB.Get(&metric)
+	result, err := app.DB.Get(&metric)
 	if err != nil {
 		res.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(res, "Value of %s is absent\n", metric.ID)
-		ctx.Log.Errorln("Cannot get metric:", err)
+		app.Log.Errorln("Cannot get metric:", err)
 		return
 	}
 
@@ -232,7 +232,7 @@ func (ctx *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) 
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(res, "Error in marshaller: %v\n", err)
-		ctx.Log.Errorln("Error in marshaller:", err)
+		app.Log.Errorln("Error in marshaller:", err)
 		return
 	}
 
@@ -241,12 +241,12 @@ func (ctx *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) 
 	fmt.Fprintf(res, "%s", jsonData)
 }
 
-func (ctx *AppContext) GetAllParamsJSON(res http.ResponseWriter, req *http.Request) {
-	result, err := ctx.DB.GetAll()
+func (app *AppContext) GetAllParamsJSON(res http.ResponseWriter, req *http.Request) {
+	result, err := app.DB.GetAll()
 	if err != nil {
 		res.WriteHeader(http.StatusBadGateway)
 		fmt.Fprintf(res, "Something went wrong\n")
-		ctx.Log.Errorln("Cannot get all metrics:", err)
+		app.Log.Errorln("Cannot get all metrics:", err)
 		return
 	}
 
@@ -254,7 +254,7 @@ func (ctx *AppContext) GetAllParamsJSON(res http.ResponseWriter, req *http.Reque
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(res, "Error in marshaller: %v\n", err)
-		ctx.Log.Errorln("Error in marchaller:", err)
+		app.Log.Errorln("Error in marchaller:", err)
 		return
 	}
 
@@ -263,17 +263,17 @@ func (ctx *AppContext) GetAllParamsJSON(res http.ResponseWriter, req *http.Reque
 	fmt.Fprintf(res, "%s", jsonData)
 }
 
-func (ctx *AppContext) CheckDBConnect(res http.ResponseWriter, req *http.Request) {
+func (app *AppContext) CheckDBConnect(res http.ResponseWriter, req *http.Request) {
 
-	if ctx.Cfg.DSN == "" {
+	if app.Cfg.DSN == "" {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	db, err := sql.Open("pgx", ctx.Cfg.DSN)
+	db, err := sql.Open("pgx", app.Cfg.DSN)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
-		ctx.Log.Errorln("DB check open failed:", err)
+		app.Log.Errorln("DB check open failed:", err)
 		return
 	}
 	defer db.Close()
@@ -282,7 +282,7 @@ func (ctx *AppContext) CheckDBConnect(res http.ResponseWriter, req *http.Request
 	defer cancel()
 	if err = db.PingContext(c); err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
-		ctx.Log.Errorln("DB check test failed:", err)
+		app.Log.Errorln("DB check test failed:", err)
 	}
 
 	res.WriteHeader(http.StatusOK)
