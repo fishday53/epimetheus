@@ -68,7 +68,7 @@ func (cfg *Config) Get() error {
 		cfg.StoreInterval = *storeIntervalFlag
 	}
 
-	if cfg.Restore == false {
+	if !cfg.Restore {
 		cfg.Restore = *restoreFlag
 	}
 
