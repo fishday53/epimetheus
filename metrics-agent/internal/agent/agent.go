@@ -67,7 +67,7 @@ func GetMetrics(cfg *config.Config) (*[]*metrics.Metric, error) {
 	return &m, nil
 }
 
-func SendMetric(url string, metric *metrics.Metric) error {
+func SendMetrics(url string, metric *[]*metrics.Metric) error {
 
 	jsonData, err := json.Marshal(metric)
 	if err != nil {

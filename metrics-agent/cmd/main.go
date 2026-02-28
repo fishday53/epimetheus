@@ -21,7 +21,7 @@ func main() {
 
 	const (
 		proto = "http://"
-		path  = "/update/"
+		path  = "/updates/"
 	)
 	url := proto + cfg.Addr + path
 
@@ -33,10 +33,10 @@ func main() {
 				log.Printf("Cannot get metrics: %v\n", err)
 			}
 
-			for _, mtr := range *m {
-				err = agent.SendMetric(url, mtr)
+			if len(*m) != 0 {
+				err = agent.SendMetrics(url, m)
 				if err != nil {
-					log.Printf("Metric send failed. Metric: %v, Error:%v\n", *mtr, err)
+					log.Printf("Metric send failed. Error:%v\n", err)
 				}
 			}
 

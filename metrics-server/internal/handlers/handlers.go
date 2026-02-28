@@ -206,6 +206,42 @@ func (app *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 	fmt.Fprintf(res, "%s", jsonData)
 }
 
+func (app *AppContext) SetMultiParamJSON(res http.ResponseWriter, req *http.Request) {
+	var metrics []usecase.Metric
+
+	if err := json.NewDecoder(req.Body).Decode(&metrics); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		app.Log.Errorln("Cannot decode request:", err)
+		return
+	}
+
+	for _, metric := range metrics {
+		if metric.ID == "" {
+			res.WriteHeader(http.StatusNotFound)
+			app.Log.Errorln("Name is not defined")
+			return
+		}
+
+		_, err := app.DB.Set(&metric)
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			app.Log.Errorln("Cannot set metric:", err)
+			return
+		}
+	}
+
+	if app.Cfg.StoreInterval == 0 {
+		err := app.DB.Dump(app.Cfg.FileStoragePath)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			app.Log.Errorln("Dump error:", err)
+			return
+		}
+	}
+
+	res.WriteHeader(http.StatusOK)
+}
+
 func (app *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) {
 	var metric usecase.Metric
 

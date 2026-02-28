@@ -26,6 +26,7 @@ func NewMultiplexer(app *handlers.AppContext) *chi.Mux {
 		r.Use(app.CheckContentType)
 		r.Post(`/value/`, app.GetParamJSON)
 		r.Post(`/update/`, app.SetParamJSON)
+		r.Post(`/updates/`, app.SetMultiParamJSON)
 	})
 
 	return r
