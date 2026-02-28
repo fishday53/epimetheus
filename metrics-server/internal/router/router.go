@@ -6,25 +6,27 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func NewMultiplexer(ctx *handlers.AppContext) *chi.Mux {
+func NewMultiplexer(app *handlers.AppContext) *chi.Mux {
 
 	r := chi.NewRouter()
 
-	r.Use(ctx.Logger)
-	r.Use(ctx.GzipHandler)
+	r.Use(app.Logger)
+	r.Use(app.GzipHandler)
 
 	// legacy plaintext API
 	r.Group(func(r chi.Router) {
-		r.Get(`/value/{mtype}/{name}`, ctx.GetParam)
-		r.Post(`/update/{mtype}/{name}/{value}`, ctx.SetParam)
-		r.Get(`/`, ctx.GetAllParams)
+		r.Get(`/value/{mtype}/{name}`, app.GetParam)
+		r.Post(`/update/{mtype}/{name}/{value}`, app.SetParam)
+		r.Get(`/`, app.GetAllParams)
+		r.Get(`/ping`, app.CheckDBConnect)
 	})
 
 	// JSON API
 	r.Group(func(r chi.Router) {
-		r.Use(ctx.CheckContentType)
-		r.Post(`/value/`, ctx.GetParamJSON)
-		r.Post(`/update/`, ctx.SetParamJSON)
+		r.Use(app.CheckContentType)
+		r.Post(`/value/`, app.GetParamJSON)
+		r.Post(`/update/`, app.SetParamJSON)
+		r.Post(`/updates/`, app.SetMultiParamJSON)
 	})
 
 	return r

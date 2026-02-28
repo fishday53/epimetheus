@@ -22,7 +22,52 @@ var backoffSchedule = []time.Duration{
 	1 * time.Second,
 }
 
-func sendMetric(url string, metric *metrics.Metric) error {
+func GetMetrics(cfg *config.Config) (*[]*metrics.Metric, error) {
+
+	var m []*metrics.Metric
+
+	log.SetOutput(os.Stdout)
+
+	// RunTime metrics
+	for _, metricName := range metrics.MetricList {
+
+		value, err := metrics.GetRuntimeMetric(metricName)
+		if err != nil {
+			log.Printf("%s error: %v\n", metricName, err)
+		} else {
+			log.Printf("%s=%f\n", metricName, value)
+		}
+
+		metric := metrics.Metric{
+			ID:    metricName,
+			MType: "gauge",
+			Value: &value,
+		}
+
+		m = append(m, &metric)
+	}
+
+	// Additional counter
+	pollCount := metrics.Metric{
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: &tick,
+	}
+	m = append(m, &pollCount)
+
+	// Additional gauge
+	rnd := rand.Float64()
+	randomValue := metrics.Metric{
+		ID:    "RandomValue",
+		MType: "gauge",
+		Value: &rnd,
+	}
+	m = append(m, &randomValue)
+
+	return &m, nil
+}
+
+func SendMetrics(url string, metric *[]*metrics.Metric) error {
 
 	jsonData, err := json.Marshal(metric)
 	if err != nil {
@@ -62,74 +107,4 @@ func sendMetric(url string, metric *metrics.Metric) error {
 	}
 
 	return nil
-}
-
-func Agent() error {
-	var cfg config.Config
-
-	log.SetOutput(os.Stdout)
-
-	if err := cfg.Get(); err != nil {
-		log.Fatalf("Cannot get configuration. Error:%v\n", err)
-		return err
-	}
-
-	url := "http://" + cfg.Addr + "/update/"
-
-	for {
-		for i := 0; i < (cfg.ReportInterval / cfg.PollInterval); i++ {
-
-			// RunTime metrics
-			for _, metricName := range metrics.MetricList {
-
-				value, err := metrics.GetRuntimeMetric(metricName)
-				if err != nil {
-					log.Printf("%s error: %v\n", metricName, err)
-					return err
-				} else {
-					log.Printf("%s=%f\n", metricName, value)
-				}
-
-				metric := metrics.Metric{
-					ID:    metricName,
-					MType: "gauge",
-					Value: &value,
-				}
-
-				err = sendMetric(url, &metric)
-				if err != nil {
-					log.Fatalf("Metric send failed. Metric: %s, Error:%v\n", metricName, err)
-					return err
-				}
-			}
-
-			// Additional counter
-			pollCount := metrics.Metric{
-				ID:    "PollCount",
-				MType: "counter",
-				Delta: &tick,
-			}
-			err := sendMetric(url, &pollCount)
-			if err != nil {
-				log.Fatalf("Metric send failed. Metric: PollCount, Error:%v\n", err)
-				return err
-			}
-
-			// Additional gauge
-			rnd := rand.Float64()
-			randomValue := metrics.Metric{
-				ID:    "RandomValue",
-				MType: "gauge",
-				Value: &rnd,
-			}
-			err = sendMetric(url, &randomValue)
-			if err != nil {
-				log.Fatalf("Metric send failed. Metric: RandomValue, Error:%v\n", err)
-				return err
-			}
-
-			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
-		}
-
-	}
 }

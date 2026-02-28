@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func Test_sendMetric(t *testing.T) {
+func Test_SendMetric(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr bool
@@ -34,7 +34,7 @@ func Test_sendMetric(t *testing.T) {
 			server := httptest.NewServer(handler)
 			defer server.Close()
 
-			gotErr := sendMetric(server.URL, &randomValue)
+			gotErr := SendMetrics(server.URL, &[]*metrics.Metric{&randomValue})
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("sendMetric() failed: %v", gotErr)
