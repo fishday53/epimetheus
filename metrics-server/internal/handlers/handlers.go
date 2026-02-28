@@ -10,6 +10,7 @@ import (
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
 	"metrics-server/internal/storage/postgres"
+	"metrics-server/usecase"
 	"net/http"
 	"time"
 
@@ -20,7 +21,7 @@ import (
 )
 
 type AppContext struct {
-	DB  storage.Repositories
+	DB  usecase.Repositories
 	Log *zap.SugaredLogger
 	Cfg *config.Config
 }
@@ -45,7 +46,7 @@ func NewAppContext(cfg *config.Config) (*AppContext, error) {
 }
 
 func (app *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
+	var metric usecase.Metric
 	var err error
 
 	if req.Method != http.MethodPost {
@@ -98,7 +99,7 @@ func (app *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
 }
 
 func (app *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
+	var metric usecase.Metric
 	var resultString string
 
 	metric.ID = chi.URLParam(req, "name")
@@ -162,7 +163,7 @@ func (app *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) 
 }
 
 func (app *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
+	var metric usecase.Metric
 
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
@@ -206,7 +207,7 @@ func (app *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) 
 }
 
 func (app *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
+	var metric usecase.Metric
 
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)

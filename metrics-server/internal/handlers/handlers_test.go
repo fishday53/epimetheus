@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
+	"metrics-server/usecase"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -227,12 +228,12 @@ func Test_SetParamJSON(t *testing.T) {
 	}
 	tests := []struct {
 		name   string
-		metric storage.Metric
+		metric usecase.Metric
 		want   want
 	}{
 		{
 			name: "counter",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "c1",
 				MType: "counter",
 				Delta: &testCounter,
@@ -243,7 +244,7 @@ func Test_SetParamJSON(t *testing.T) {
 		},
 		{
 			name: "gauge",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "g1",
 				MType: "gauge",
 				Value: &testGauge,
@@ -254,7 +255,7 @@ func Test_SetParamJSON(t *testing.T) {
 		},
 		{
 			name: "bad mtype",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "g1",
 				MType: "something",
 				Value: &testGauge,
@@ -265,7 +266,7 @@ func Test_SetParamJSON(t *testing.T) {
 		},
 		{
 			name: "bad value",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "g1",
 				MType: "gauge",
 			},
@@ -275,7 +276,7 @@ func Test_SetParamJSON(t *testing.T) {
 		},
 		{
 			name: "no name",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "",
 				MType: "gauge",
 				Value: &testGauge,
@@ -317,12 +318,12 @@ func Test_GetParamJSON(t *testing.T) {
 	tests := []struct {
 		name    string
 		storage memory.MemStorage
-		request storage.Metric
+		request usecase.Metric
 		want    want
 	}{
 		{
 			name: "Existent counter",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "c1",
 				MType: "counter",
 			},
@@ -336,7 +337,7 @@ func Test_GetParamJSON(t *testing.T) {
 		},
 		{
 			name: "Nonexistent counter",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "c2",
 				MType: "counter",
 			},
@@ -350,7 +351,7 @@ func Test_GetParamJSON(t *testing.T) {
 		},
 		{
 			name: "Existent gauge",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "g1",
 				MType: "gauge",
 			},
@@ -364,7 +365,7 @@ func Test_GetParamJSON(t *testing.T) {
 		},
 		{
 			name: "Nonexistent gauge",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "g2",
 				MType: "gauge",
 			},
@@ -378,7 +379,7 @@ func Test_GetParamJSON(t *testing.T) {
 		},
 		{
 			name: "Bad mtype",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "g1",
 				MType: "SomeWrongNType",
 			},

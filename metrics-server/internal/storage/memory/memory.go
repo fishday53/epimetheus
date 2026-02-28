@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"metrics-server/internal/storage"
+	"metrics-server/usecase"
 	"os"
 )
 
@@ -25,9 +25,9 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-func (m *MemStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
+func (m *MemStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 
-	result := storage.Metric{
+	result := usecase.Metric{
 		ID:    metric.ID,
 		MType: metric.MType,
 	}
@@ -75,7 +75,7 @@ func (m *MemStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 	return &result, nil
 }
 
-func (m *MemStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
+func (m *MemStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 
 	if _, ok := m.Metrics[metric.ID]; !ok {
 		return nil, fmt.Errorf("%s not found", metric.ID)
@@ -97,10 +97,10 @@ func (m *MemStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
 	return metric, nil
 }
 
-func (m *MemStorage) GetAll() (*[]storage.Metric, error) {
-	result := []storage.Metric{}
+func (m *MemStorage) GetAll() (*[]usecase.Metric, error) {
+	result := []usecase.Metric{}
 	for k, v := range m.Metrics {
-		result = append(result, storage.Metric{
+		result = append(result, usecase.Metric{
 			ID:    k,
 			MType: v.MType,
 			Delta: v.Delta,

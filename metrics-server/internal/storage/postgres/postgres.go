@@ -3,7 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
-	"metrics-server/internal/storage"
+	"metrics-server/usecase"
 	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -46,12 +46,12 @@ func (p *PsqlStorage) Migrate() error {
 	return nil
 }
 
-func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
+func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 
 	result, err := p.Get(metric)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			result = &storage.Metric{
+			result = &usecase.Metric{
 				ID:    metric.ID,
 				MType: metric.MType,
 			}
@@ -104,7 +104,7 @@ func (p *PsqlStorage) Set(metric *storage.Metric) (*storage.Metric, error) {
 	return result, nil
 }
 
-func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
+func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 	var delta int64
 	var value float64
 
@@ -125,8 +125,8 @@ func (p *PsqlStorage) Get(metric *storage.Metric) (*storage.Metric, error) {
 	return metric, nil
 }
 
-func (p *PsqlStorage) GetAll() (*[]storage.Metric, error) {
-	result := []storage.Metric{}
+func (p *PsqlStorage) GetAll() (*[]usecase.Metric, error) {
+	result := []usecase.Metric{}
 
 	query := fmt.Sprintf("SELECT id, mtype, delta, value FROM %s", table)
 
@@ -145,7 +145,7 @@ func (p *PsqlStorage) GetAll() (*[]storage.Metric, error) {
 			return nil, fmt.Errorf("cannot process a row: %v", err)
 		}
 
-		result = append(result, storage.Metric{ID: id, MType: mtype, Delta: &delta, Value: &value})
+		result = append(result, usecase.Metric{ID: id, MType: mtype, Delta: &delta, Value: &value})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("cannot process all rows: %v", err)
