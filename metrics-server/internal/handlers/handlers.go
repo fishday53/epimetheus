@@ -272,7 +272,6 @@ func (app *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) 
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
 	fmt.Fprintf(res, "%s", jsonData)
-	app.Log.Infoln(string(jsonData))
 }
 
 func (app *AppContext) GetAllParamsJSON(res http.ResponseWriter, req *http.Request) {
