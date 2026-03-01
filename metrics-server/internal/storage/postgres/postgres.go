@@ -72,12 +72,16 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 
 	case "gauge":
 
+		//fmt.Println("old:", *result.Value)
+		fmt.Println("set:", *metric.Value)
 		result.Value = metric.Value
+		fmt.Println("new:", *result.Value)
 
 		query := fmt.Sprintf(`
 		INSERT INTO %s (id, mtype, value) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
 		DO UPDATE SET value = $3`, table)
+		fmt.Println(query, result.ID, result.MType, *result.Value)
 		_, err := p.DB.Exec(query, result.ID, result.MType, *result.Value)
 		if err != nil {
 			return nil, fmt.Errorf("cannot set value: %v", err)
@@ -92,6 +96,7 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 		INSERT INTO %s (id, mtype, delta) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
 		DO UPDATE SET delta = $3`, table)
+		fmt.Println(query, result.ID, result.MType, *result.Delta)
 		_, err := p.DB.Exec(query, result.ID, result.MType, *result.Delta)
 		if err != nil {
 			return nil, fmt.Errorf("cannot set delta: %v", err)
@@ -107,11 +112,17 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 	var delta int64
 	var value float64
+	result := usecase.Metric{
+		ID:    metric.ID,
+		MType: metric.MType,
+		Delta: &delta,
+		Value: &value,
+	}
 
 	query := fmt.Sprintf("SELECT delta, value FROM %s WHERE id = $1 AND mtype = $2", table)
 
 	row := p.DB.QueryRow(query, metric.ID, metric.MType)
-	err := row.Scan(&delta, &value)
+	err := row.Scan(result.Delta, result.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("%s not found", metric.ID)
@@ -119,10 +130,10 @@ func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 		return nil, fmt.Errorf("sql query error: %v", err)
 	}
 
-	metric.Delta = &delta
-	metric.Value = &value
+	// metric.Delta = &delta
+	// metric.Value = &value
 
-	return metric, nil
+	return &result, nil
 }
 
 func (p *PsqlStorage) GetAll() (*[]usecase.Metric, error) {
