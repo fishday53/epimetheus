@@ -129,8 +129,6 @@ func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 	result := usecase.Metric{
 		ID:    metric.ID,
 		MType: metric.MType,
-		Delta: &delta,
-		Value: &value,
 	}
 
 	switch metric.MType {
