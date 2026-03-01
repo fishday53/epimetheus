@@ -41,6 +41,7 @@ func NewPsqlStorage(dsn string) (*PsqlStorage, error) {
 }
 
 func (p *PsqlStorage) Migrate() error {
+	var err error
 	query := fmt.Sprintf(`
 	CREATE TABLE IF NOT EXISTS %s (
 		id VARCHAR(255) NOT NULL PRIMARY KEY,
@@ -48,14 +49,19 @@ func (p *PsqlStorage) Migrate() error {
 		delta BIGINT DEFAULT 0,
 		value FLOAT8 DEFAULT 0.0)
 	`, table)
-	_, err := p.DB.Exec(query)
-	if err != nil {
-		return fmt.Errorf("cannot create table %s: %v", query, err)
+
+	for _, backoff := range *p.BackOffSchedule {
+		if _, err = p.DB.Exec(query); err == nil {
+			return nil
+		}
+		time.Sleep(backoff)
 	}
-	return nil
+
+	return fmt.Errorf("cannot create table %s: %v", query, err)
 }
 
 func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
+	var err error
 
 	result, err := p.Get(metric)
 	if err != nil {
@@ -87,11 +93,13 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 		INSERT INTO %s (id, mtype, value) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
 		DO UPDATE SET value = $3`, table)
-		_, err := p.DB.Exec(query, result.ID, result.MType, *result.Value)
-		if err != nil {
-			return nil, fmt.Errorf("cannot set value: %v", err)
+		for _, backoff := range *p.BackOffSchedule {
+			if _, err := p.DB.Exec(query, result.ID, result.MType, *result.Value); err == nil {
+				return result, nil
+			}
+			time.Sleep(backoff)
 		}
-		result.Value = metric.Value
+		return nil, fmt.Errorf("cannot set value: %v", err)
 
 	case "counter":
 
@@ -101,19 +109,21 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 		INSERT INTO %s (id, mtype, delta) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
 		DO UPDATE SET delta = $3`, table)
-		_, err := p.DB.Exec(query, result.ID, result.MType, *result.Delta)
-		if err != nil {
-			return nil, fmt.Errorf("cannot set delta: %v", err)
+		for _, backoff := range *p.BackOffSchedule {
+			if _, err := p.DB.Exec(query, result.ID, result.MType, *result.Delta); err == nil {
+				return result, nil
+			}
+			time.Sleep(backoff)
 		}
+		return nil, fmt.Errorf("cannot set delta: %v", err)
 
 	default:
 		return nil, fmt.Errorf("unsupported value kind: %s", metric.MType)
 	}
-
-	return result, nil
 }
 
 func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
+	var err error
 	var delta int64
 	var value float64
 	result := usecase.Metric{
@@ -125,24 +135,33 @@ func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 
 	query := fmt.Sprintf("SELECT delta, value FROM %s WHERE id = $1 AND mtype = $2", table)
 
-	row := p.DB.QueryRow(query, metric.ID, metric.MType)
-	err := row.Scan(result.Delta, result.Value)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("%s not found", metric.ID)
+	for _, backoff := range *p.BackOffSchedule {
+		row := p.DB.QueryRow(query, metric.ID, metric.MType)
+		err = row.Scan(result.Delta, result.Value)
+		if err == nil {
+			return &result, nil
+		} else {
+			if err == sql.ErrNoRows {
+				return nil, fmt.Errorf("%s not found", metric.ID)
+			}
 		}
-		return nil, fmt.Errorf("sql query error: %v", err)
+		time.Sleep(backoff)
 	}
-
-	return &result, nil
+	return nil, fmt.Errorf("sql query error: %v", err)
 }
 
 func (p *PsqlStorage) GetAll() (*[]usecase.Metric, error) {
+	var err error
+	var rows *sql.Rows
 	result := []usecase.Metric{}
 
 	query := fmt.Sprintf("SELECT id, mtype, delta, value FROM %s", table)
 
-	rows, err := p.DB.Query(query)
+	for _, backoff := range *p.BackOffSchedule {
+		if rows, err = p.DB.Query(query); err != nil {
+			time.Sleep(backoff)
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("error in query for all metrics: %v", err)
 	}
@@ -186,5 +205,5 @@ func (p *PsqlStorage) Ping() error {
 		}
 		time.Sleep(backoff)
 	}
-	return fmt.Errorf("Cannot ping DB: %v\n", err)
+	return fmt.Errorf("Cannot ping DB: %v", err)
 }
