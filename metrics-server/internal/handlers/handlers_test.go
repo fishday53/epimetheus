@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
+	"metrics-server/internal/usecase"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -65,9 +66,9 @@ func Test_SetParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: memory.NewMemStorage("test")}
+			app := &AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
-			r.Post(`/update/{mtype}/{name}/{value}`, ctx.SetParam)
+			r.Post(`/update/{mtype}/{name}/{value}`, app.SetParam)
 
 			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -153,9 +154,9 @@ func Test_GetParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: &tt.storage}
+			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/value/{mtype}/{name}`, ctx.GetParam)
+			r.Get(`/value/{mtype}/{name}`, app.GetParam)
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -201,9 +202,9 @@ func Test_getAllParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: &tt.storage}
+			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/`, ctx.GetAllParams)
+			r.Get(`/`, app.GetAllParams)
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -227,12 +228,12 @@ func Test_SetParamJSON(t *testing.T) {
 	}
 	tests := []struct {
 		name   string
-		metric storage.Metric
+		metric usecase.Metric
 		want   want
 	}{
 		{
 			name: "counter",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "c1",
 				MType: "counter",
 				Delta: &testCounter,
@@ -243,7 +244,7 @@ func Test_SetParamJSON(t *testing.T) {
 		},
 		{
 			name: "gauge",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "g1",
 				MType: "gauge",
 				Value: &testGauge,
@@ -254,7 +255,7 @@ func Test_SetParamJSON(t *testing.T) {
 		},
 		{
 			name: "bad mtype",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "g1",
 				MType: "something",
 				Value: &testGauge,
@@ -265,7 +266,7 @@ func Test_SetParamJSON(t *testing.T) {
 		},
 		{
 			name: "bad value",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "g1",
 				MType: "gauge",
 			},
@@ -275,7 +276,7 @@ func Test_SetParamJSON(t *testing.T) {
 		},
 		{
 			name: "no name",
-			metric: storage.Metric{
+			metric: usecase.Metric{
 				ID:    "",
 				MType: "gauge",
 				Value: &testGauge,
@@ -287,9 +288,9 @@ func Test_SetParamJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: memory.NewMemStorage("test")}
+			app := &AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
-			r.Post(`/update/`, ctx.SetParamJSON)
+			r.Post(`/update/`, app.SetParamJSON)
 
 			jsonData, _ := json.Marshal(tt.metric)
 			reader := bytes.NewReader(jsonData)
@@ -317,12 +318,12 @@ func Test_GetParamJSON(t *testing.T) {
 	tests := []struct {
 		name    string
 		storage memory.MemStorage
-		request storage.Metric
+		request usecase.Metric
 		want    want
 	}{
 		{
 			name: "Existent counter",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "c1",
 				MType: "counter",
 			},
@@ -336,7 +337,7 @@ func Test_GetParamJSON(t *testing.T) {
 		},
 		{
 			name: "Nonexistent counter",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "c2",
 				MType: "counter",
 			},
@@ -350,7 +351,7 @@ func Test_GetParamJSON(t *testing.T) {
 		},
 		{
 			name: "Existent gauge",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "g1",
 				MType: "gauge",
 			},
@@ -364,7 +365,7 @@ func Test_GetParamJSON(t *testing.T) {
 		},
 		{
 			name: "Nonexistent gauge",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "g2",
 				MType: "gauge",
 			},
@@ -378,7 +379,7 @@ func Test_GetParamJSON(t *testing.T) {
 		},
 		{
 			name: "Bad mtype",
-			request: storage.Metric{
+			request: usecase.Metric{
 				ID:    "g1",
 				MType: "SomeWrongNType",
 			},
@@ -393,9 +394,9 @@ func Test_GetParamJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: &tt.storage}
+			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Post(`/value/`, ctx.GetParamJSON)
+			r.Post(`/value/`, app.GetParamJSON)
 
 			jsonData, _ := json.Marshal(tt.request)
 			reader := bytes.NewReader(jsonData)
@@ -444,9 +445,9 @@ func Test_getAllParamsJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := &AppContext{DB: &tt.storage}
+			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/`, ctx.GetAllParamsJSON)
+			r.Get(`/`, app.GetAllParamsJSON)
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()

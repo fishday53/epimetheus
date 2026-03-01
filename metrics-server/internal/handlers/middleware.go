@@ -41,7 +41,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func (ctx *AppContext) Logger(next http.Handler) http.Handler {
+func (app *AppContext) Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -59,7 +59,7 @@ func (ctx *AppContext) Logger(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		ctx.Log.Infoln(
+		app.Log.Infoln(
 			"uri", r.RequestURI,
 			"method", r.Method,
 			"status", responseData.status,
@@ -69,12 +69,12 @@ func (ctx *AppContext) Logger(next http.Handler) http.Handler {
 	})
 }
 
-func (ctx *AppContext) CheckContentType(next http.Handler) http.Handler {
+func (app *AppContext) CheckContentType(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(w, "Invalid Content-Type, expected application/json", http.StatusUnsupportedMediaType)
-			ctx.Log.Errorln("Invalid Content-Type ", r.Header.Get("Content-Type"))
+			app.Log.Errorln("Invalid Content-Type ", r.Header.Get("Content-Type"))
 			return
 		}
 
@@ -82,13 +82,13 @@ func (ctx *AppContext) CheckContentType(next http.Handler) http.Handler {
 	})
 }
 
-func (ctx *AppContext) GzipHandler(next http.Handler) http.Handler {
+func (app *AppContext) GzipHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Encoding") == "gzip" {
 			gzr, err := gzip.NewReader(r.Body)
 			if err != nil {
 				http.Error(w, "Bad Request: Invalid gzip data", http.StatusBadRequest)
-				ctx.Log.Errorln("Bad Request: Invalid gzip data")
+				app.Log.Errorln("Bad Request: Invalid gzip data")
 				return
 			}
 			defer gzr.Close()
