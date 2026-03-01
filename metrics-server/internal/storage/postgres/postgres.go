@@ -205,5 +205,5 @@ func (p *PsqlStorage) Ping() error {
 		}
 		time.Sleep(backoff)
 	}
-	return fmt.Errorf("Cannot ping DB: %v", err)
+	return fmt.Errorf("cannot ping DB: %v", err)
 }
