@@ -72,16 +72,12 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 
 	case "gauge":
 
-		//fmt.Println("old:", *result.Value)
-		//fmt.Println("set:", *metric.Value)
 		result.Value = metric.Value
-		//fmt.Println("new:", *result.Value)
 
 		query := fmt.Sprintf(`
 		INSERT INTO %s (id, mtype, value) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
 		DO UPDATE SET value = $3`, table)
-		//fmt.Println(query, result.ID, result.MType, *result.Value)
 		_, err := p.DB.Exec(query, result.ID, result.MType, *result.Value)
 		if err != nil {
 			return nil, fmt.Errorf("cannot set value: %v", err)
@@ -96,7 +92,6 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 		INSERT INTO %s (id, mtype, delta) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
 		DO UPDATE SET delta = $3`, table)
-		//fmt.Println(query, result.ID, result.MType, *result.Delta)
 		_, err := p.DB.Exec(query, result.ID, result.MType, *result.Delta)
 		if err != nil {
 			return nil, fmt.Errorf("cannot set delta: %v", err)

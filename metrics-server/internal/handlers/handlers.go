@@ -214,7 +214,6 @@ func (app *AppContext) SetMultiParamJSON(res http.ResponseWriter, req *http.Requ
 		app.Log.Errorln("Cannot decode request:", err)
 		return
 	}
-	//fmt.Println(metrics)
 
 	for _, metric := range metrics {
 		if metric.ID == "" {
@@ -222,12 +221,6 @@ func (app *AppContext) SetMultiParamJSON(res http.ResponseWriter, req *http.Requ
 			app.Log.Errorln("Name is not defined")
 			return
 		}
-		// fmt.Println("Set ", metric.ID)
-		// if metric.MType == "gauge" {
-		// 	fmt.Println(*metric.Value)
-		// } else {
-		// 	fmt.Println(*metric.Delta)
-		// }
 		_, err := app.DB.Set(&metric)
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
