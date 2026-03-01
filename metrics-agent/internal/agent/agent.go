@@ -17,9 +17,9 @@ import (
 var tick int64 = 1
 
 var backoffSchedule = []time.Duration{
-	100 * time.Millisecond,
-	500 * time.Millisecond,
 	1 * time.Second,
+	3 * time.Second,
+	5 * time.Second,
 }
 
 func GetMetrics(cfg *config.Config) (*[]*metrics.Metric, error) {

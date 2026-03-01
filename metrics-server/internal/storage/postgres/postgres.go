@@ -1,10 +1,12 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"metrics-server/internal/usecase"
 	"strings"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -12,11 +14,18 @@ import (
 const table = "metrics"
 
 type PsqlStorage struct {
-	DB *sql.DB
+	DB              *sql.DB
+	BackOffSchedule *[]time.Duration
+}
+
+var backoffSchedule = []time.Duration{
+	1 * time.Second,
+	3 * time.Second,
+	5 * time.Second,
 }
 
 func NewPsqlStorage(dsn string) (*PsqlStorage, error) {
-	p := PsqlStorage{}
+	p := PsqlStorage{BackOffSchedule: &backoffSchedule}
 	var err error
 
 	p.DB, err = sql.Open("pgx", dsn)
@@ -125,9 +134,6 @@ func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 		return nil, fmt.Errorf("sql query error: %v", err)
 	}
 
-	// metric.Delta = &delta
-	// metric.Value = &value
-
 	return &result, nil
 }
 
@@ -168,4 +174,17 @@ func (p *PsqlStorage) Dump(filepath string) error {
 func (p *PsqlStorage) Restore(filepath string) error {
 	// not implemented
 	return nil
+}
+
+func (p *PsqlStorage) Ping() error {
+	var err error
+	for _, backoff := range *p.BackOffSchedule {
+		c, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		if err = p.DB.PingContext(c); err == nil {
+			return nil
+		}
+		time.Sleep(backoff)
+	}
+	return fmt.Errorf("Cannot ping DB: %v\n", err)
 }

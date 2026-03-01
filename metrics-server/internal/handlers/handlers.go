@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"metrics-server/internal/config"
@@ -12,7 +10,6 @@ import (
 	"metrics-server/internal/storage/postgres"
 	"metrics-server/internal/usecase"
 	"net/http"
-	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
@@ -306,17 +303,7 @@ func (app *AppContext) CheckDBConnect(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	db, err := sql.Open("pgx", app.Cfg.DSN)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		app.Log.Errorln("DB check open failed:", err)
-		return
-	}
-	defer db.Close()
-
-	c, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-	if err = db.PingContext(c); err != nil {
+	if err := app.DB.Ping(); err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		app.Log.Errorln("DB check test failed:", err)
 	}

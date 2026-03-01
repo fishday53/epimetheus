@@ -13,4 +13,5 @@ type Repositories interface {
 	GetAll() (*[]Metric, error)
 	Dump(filepath string) error
 	Restore(filepath string) error
+	Ping() error
 }

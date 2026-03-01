@@ -134,3 +134,7 @@ func (m *MemStorage) Restore(filepath string) error {
 	}
 	return nil
 }
+
+func (m *MemStorage) Ping() error {
+	return nil
+}
