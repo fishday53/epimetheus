@@ -46,8 +46,8 @@ func (p *PsqlStorage) Migrate() error {
 	CREATE TABLE IF NOT EXISTS %s (
 		id VARCHAR(255) NOT NULL PRIMARY KEY,
 		mtype VARCHAR(255) NOT NULL,
-		delta BIGINT DEFAULT 0,
-		value FLOAT8 DEFAULT 0.0)
+		delta BIGINT NULL,
+		value FLOAT8 DEFAULT NULL)
 	`, table)
 
 	for _, backoff := range *p.BackOffSchedule {
