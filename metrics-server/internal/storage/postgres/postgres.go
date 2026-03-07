@@ -93,11 +93,9 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 		INSERT INTO %s (id, mtype, value) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
 		DO UPDATE SET value = $3`, table)
-		for _, backoff := range *p.BackOffSchedule {
-			if _, err := p.DB.Exec(query, result.ID, result.MType, *result.Value); err == nil {
-				return result, nil
-			}
-			time.Sleep(backoff)
+
+		if _, err := p.DB.Exec(query, result.ID, result.MType, *result.Value); err == nil {
+			return result, nil
 		}
 		return nil, fmt.Errorf("cannot set value: %v", err)
 
@@ -109,11 +107,9 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 		INSERT INTO %s (id, mtype, delta) VALUES ($1, $2, $3)
 		ON CONFLICT (id)
 		DO UPDATE SET delta = $3`, table)
-		for _, backoff := range *p.BackOffSchedule {
-			if _, err := p.DB.Exec(query, result.ID, result.MType, *result.Delta); err == nil {
-				return result, nil
-			}
-			time.Sleep(backoff)
+
+		if _, err := p.DB.Exec(query, result.ID, result.MType, *result.Delta); err == nil {
+			return result, nil
 		}
 		return nil, fmt.Errorf("cannot set delta: %v", err)
 
@@ -136,33 +132,29 @@ func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 	case "gauge":
 		result.Value = &value
 		query := fmt.Sprintf("SELECT value FROM %s WHERE id = $1 AND mtype = $2", table)
-		for _, backoff := range *p.BackOffSchedule {
-			row := p.DB.QueryRow(query, metric.ID, metric.MType)
-			err = row.Scan(result.Value)
-			if err == nil {
-				return &result, nil
-			} else {
-				if err == sql.ErrNoRows {
-					return nil, fmt.Errorf("%s not found", metric.ID)
-				}
+
+		row := p.DB.QueryRow(query, metric.ID, metric.MType)
+		err = row.Scan(result.Value)
+		if err == nil {
+			return &result, nil
+		} else {
+			if err == sql.ErrNoRows {
+				return nil, fmt.Errorf("%s not found", metric.ID)
 			}
-			time.Sleep(backoff)
 		}
 		return nil, fmt.Errorf("sql query error: %v", err)
 	case "counter":
 		result.Delta = &delta
 		query := fmt.Sprintf("SELECT delta FROM %s WHERE id = $1 AND mtype = $2", table)
-		for _, backoff := range *p.BackOffSchedule {
-			row := p.DB.QueryRow(query, metric.ID, metric.MType)
-			err = row.Scan(result.Delta)
-			if err == nil {
-				return &result, nil
-			} else {
-				if err == sql.ErrNoRows {
-					return nil, fmt.Errorf("%s not found", metric.ID)
-				}
+
+		row := p.DB.QueryRow(query, metric.ID, metric.MType)
+		err = row.Scan(result.Delta)
+		if err == nil {
+			return &result, nil
+		} else {
+			if err == sql.ErrNoRows {
+				return nil, fmt.Errorf("%s not found", metric.ID)
 			}
-			time.Sleep(backoff)
 		}
 		return nil, fmt.Errorf("sql query error: %v", err)
 	default:
@@ -177,11 +169,7 @@ func (p *PsqlStorage) GetAll() (*[]usecase.Metric, error) {
 
 	query := fmt.Sprintf("SELECT id, mtype, delta, value FROM %s", table)
 
-	for _, backoff := range *p.BackOffSchedule {
-		if rows, err = p.DB.Query(query); err != nil {
-			time.Sleep(backoff)
-		}
-	}
+	rows, err = p.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error in query for all metrics: %v", err)
 	}
