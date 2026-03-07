@@ -70,7 +70,7 @@ func GetMetrics(cfg *config.Config) (*[]*metrics.Metric, error) {
 func SendMetrics(url string, metric *[]*metrics.Metric) error {
 
 	jsonData, err := json.Marshal(metric)
-	fmt.Println(string(jsonData))
+
 	if err != nil {
 		return fmt.Errorf("error in marshaller: %v", err)
 	}
