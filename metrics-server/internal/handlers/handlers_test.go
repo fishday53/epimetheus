@@ -6,6 +6,7 @@ import (
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
 	"metrics-server/internal/usecase"
+	"metrics-server/internal/usecase/context"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -66,7 +67,7 @@ func Test_SetParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &AppContext{DB: memory.NewMemStorage()}
+			app := &context.AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
 			r.Post(`/update/{mtype}/{name}/{value}`, SetParam(app))
 
@@ -154,7 +155,7 @@ func Test_GetParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &AppContext{DB: &tt.storage}
+			app := &context.AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
 			r.Get(`/value/{mtype}/{name}`, GetParam(app))
 
@@ -202,7 +203,7 @@ func Test_getAllParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &AppContext{DB: &tt.storage}
+			app := &context.AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
 			r.Get(`/`, GetAllParams(app))
 
@@ -288,7 +289,7 @@ func Test_SetParamJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &AppContext{DB: memory.NewMemStorage()}
+			app := &context.AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
 			r.Post(`/update/`, SetParamJSON(app))
 
@@ -394,7 +395,7 @@ func Test_GetParamJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &AppContext{DB: &tt.storage}
+			app := &context.AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
 			r.Post(`/value/`, GetParamJSON(app))
 
@@ -445,7 +446,7 @@ func Test_getAllParamsJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &AppContext{DB: &tt.storage}
+			app := &context.AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
 			r.Get(`/`, GetAllParamsJSON(app))
 

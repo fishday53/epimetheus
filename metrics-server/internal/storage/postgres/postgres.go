@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"metrics-server/internal/usecase"
-
 	"strings"
 	"time"
 

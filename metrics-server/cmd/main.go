@@ -3,13 +3,13 @@ package main
 import (
 	"log"
 	"metrics-server/internal/config"
-	"metrics-server/internal/handlers"
 	"metrics-server/internal/server"
+	"metrics-server/internal/usecase/context"
 	"os"
 	"time"
 )
 
-func Dumper(app *handlers.AppContext) {
+func Dumper(app *context.AppContext) {
 	for {
 		app.DB.Dump(app.Cfg.FileStoragePath)
 		time.Sleep(time.Duration(app.Cfg.StoreInterval) * time.Second)
@@ -29,7 +29,7 @@ func main() {
 		return
 	}
 
-	app, err := handlers.NewAppContext(&cfg)
+	app, err := context.NewAppContext(&cfg)
 	if err != nil {
 		log.Printf("%v", err)
 		return

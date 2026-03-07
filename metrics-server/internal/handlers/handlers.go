@@ -3,46 +3,17 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"metrics-server/internal/config"
-	"metrics-server/internal/log"
 	"metrics-server/internal/storage"
-	"metrics-server/internal/storage/memory"
-	"metrics-server/internal/storage/postgres"
 	"metrics-server/internal/usecase"
+	"metrics-server/internal/usecase/context"
 	"net/http"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 )
 
-type AppContext struct {
-	DB  usecase.Repositories
-	Log *zap.SugaredLogger
-	Cfg *config.Config
-}
-
-func NewAppContext(cfg *config.Config) (*AppContext, error) {
-	var err error
-	a := AppContext{
-		Log: log.NewLogger(),
-		Cfg: cfg,
-	}
-
-	if cfg.DSN == "" {
-		a.DB = memory.NewMemStorage()
-	} else {
-		a.DB, err = postgres.NewPsqlStorage(cfg.DSN)
-		if err != nil {
-			return nil, fmt.Errorf("cannot initialize new app context: %v", err)
-		}
-	}
-
-	return &a, nil
-}
-
-func SetParam(app *AppContext) http.HandlerFunc {
+func SetParam(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metric usecase.Metric
 		var err error
@@ -97,7 +68,7 @@ func SetParam(app *AppContext) http.HandlerFunc {
 	}
 }
 
-func GetParam(app *AppContext) http.HandlerFunc {
+func GetParam(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metric usecase.Metric
 		var resultString string
@@ -136,7 +107,7 @@ func GetParam(app *AppContext) http.HandlerFunc {
 	}
 }
 
-func GetAllParams(app *AppContext) http.HandlerFunc {
+func GetAllParams(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var resultString string
 
@@ -165,7 +136,7 @@ func GetAllParams(app *AppContext) http.HandlerFunc {
 	}
 }
 
-func SetParamJSON(app *AppContext) http.HandlerFunc {
+func SetParamJSON(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metric usecase.Metric
 
@@ -211,7 +182,7 @@ func SetParamJSON(app *AppContext) http.HandlerFunc {
 	}
 }
 
-func SetMultiParamJSON(app *AppContext) http.HandlerFunc {
+func SetMultiParamJSON(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metrics []usecase.Metric
 
@@ -248,7 +219,7 @@ func SetMultiParamJSON(app *AppContext) http.HandlerFunc {
 	}
 }
 
-func GetParamJSON(app *AppContext) http.HandlerFunc {
+func GetParamJSON(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metric usecase.Metric
 
@@ -286,7 +257,7 @@ func GetParamJSON(app *AppContext) http.HandlerFunc {
 	}
 }
 
-func GetAllParamsJSON(app *AppContext) http.HandlerFunc {
+func GetAllParamsJSON(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		result, err := app.DB.GetAll()
 		if err != nil {
@@ -310,7 +281,7 @@ func GetAllParamsJSON(app *AppContext) http.HandlerFunc {
 	}
 }
 
-func CheckDBConnect(app *AppContext) http.HandlerFunc {
+func CheckDBConnect(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
 		if app.Cfg.DSN == "" {

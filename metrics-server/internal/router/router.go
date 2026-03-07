@@ -2,11 +2,12 @@ package router
 
 import (
 	"metrics-server/internal/handlers"
+	"metrics-server/internal/usecase/context"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func NewMultiplexer(app *handlers.AppContext) *chi.Mux {
+func NewMultiplexer(app *context.AppContext) *chi.Mux {
 
 	r := chi.NewRouter()
 

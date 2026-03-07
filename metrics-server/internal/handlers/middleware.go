@@ -3,6 +3,7 @@ package handlers
 import (
 	"compress/gzip"
 	"io"
+	"metrics-server/internal/usecase/context"
 	"net/http"
 	"strings"
 	"time"
@@ -41,7 +42,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func Logger(app *AppContext) func(next http.Handler) http.Handler {
+func Logger(app *context.AppContext) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -71,7 +72,7 @@ func Logger(app *AppContext) func(next http.Handler) http.Handler {
 	}
 }
 
-func CheckContentType(app *AppContext) func(next http.Handler) http.Handler {
+func CheckContentType(app *context.AppContext) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -86,7 +87,7 @@ func CheckContentType(app *AppContext) func(next http.Handler) http.Handler {
 	}
 }
 
-func GzipHandler(app *AppContext) func(next http.Handler) http.Handler {
+func GzipHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Header.Get("Content-Encoding") == "gzip" {
