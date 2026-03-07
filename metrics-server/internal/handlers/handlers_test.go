@@ -68,7 +68,7 @@ func Test_SetParam(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
-			r.Post(`/update/{mtype}/{name}/{value}`, app.SetParam)
+			r.Post(`/update/{mtype}/{name}/{value}`, SetParam(app))
 
 			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -156,7 +156,7 @@ func Test_GetParam(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/value/{mtype}/{name}`, app.GetParam)
+			r.Get(`/value/{mtype}/{name}`, GetParam(app))
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -204,7 +204,7 @@ func Test_getAllParams(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/`, app.GetAllParams)
+			r.Get(`/`, GetAllParams(app))
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()
@@ -290,7 +290,7 @@ func Test_SetParamJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &AppContext{DB: memory.NewMemStorage()}
 			r := chi.NewRouter()
-			r.Post(`/update/`, app.SetParamJSON)
+			r.Post(`/update/`, SetParamJSON(app))
 
 			jsonData, _ := json.Marshal(tt.metric)
 			reader := bytes.NewReader(jsonData)
@@ -396,7 +396,7 @@ func Test_GetParamJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Post(`/value/`, app.GetParamJSON)
+			r.Post(`/value/`, GetParamJSON(app))
 
 			jsonData, _ := json.Marshal(tt.request)
 			reader := bytes.NewReader(jsonData)
@@ -447,7 +447,7 @@ func Test_getAllParamsJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app := &AppContext{DB: &tt.storage}
 			r := chi.NewRouter()
-			r.Get(`/`, app.GetAllParamsJSON)
+			r.Get(`/`, GetAllParamsJSON(app))
 
 			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()

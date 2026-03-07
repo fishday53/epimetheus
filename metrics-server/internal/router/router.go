@@ -10,23 +10,23 @@ func NewMultiplexer(app *handlers.AppContext) *chi.Mux {
 
 	r := chi.NewRouter()
 
-	r.Use(app.Logger)
-	r.Use(app.GzipHandler)
+	r.Use(handlers.Logger(app))
+	r.Use(handlers.GzipHandler(app))
 
 	// legacy plaintext API
 	r.Group(func(r chi.Router) {
-		r.Get(`/value/{mtype}/{name}`, app.GetParam)
-		r.Post(`/update/{mtype}/{name}/{value}`, app.SetParam)
-		r.Get(`/`, app.GetAllParams)
-		r.Get(`/ping`, app.CheckDBConnect)
+		r.Get(`/value/{mtype}/{name}`, handlers.GetParam(app))
+		r.Post(`/update/{mtype}/{name}/{value}`, handlers.SetParam(app))
+		r.Get(`/`, handlers.GetAllParams(app))
+		r.Get(`/ping`, handlers.CheckDBConnect(app))
 	})
 
 	// JSON API
 	r.Group(func(r chi.Router) {
-		r.Use(app.CheckContentType)
-		r.Post(`/value/`, app.GetParamJSON)
-		r.Post(`/update/`, app.SetParamJSON)
-		r.Post(`/updates/`, app.SetMultiParamJSON)
+		r.Use(handlers.CheckContentType(app))
+		r.Post(`/value/`, handlers.GetParamJSON(app))
+		r.Post(`/update/`, handlers.SetParamJSON(app))
+		r.Post(`/updates/`, handlers.SetMultiParamJSON(app))
 	})
 
 	return r
