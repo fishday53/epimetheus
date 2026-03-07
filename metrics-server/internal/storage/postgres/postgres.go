@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"metrics-server/internal/usecase"
+
 	"strings"
 	"time"
 
@@ -44,7 +45,7 @@ func (p *PsqlStorage) Migrate() error {
 	var err error
 	query := fmt.Sprintf(`
 	CREATE TABLE IF NOT EXISTS %s (
-		id VARCHAR(255) NOT NULL PRIMARY KEY,
+		id VARCHAR(255) PRIMARY KEY,
 		mtype VARCHAR(255) NOT NULL,
 		delta BIGINT NULL,
 		value FLOAT8 DEFAULT NULL)
