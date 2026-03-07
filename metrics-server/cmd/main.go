@@ -4,17 +4,10 @@ import (
 	"log"
 	"metrics-server/internal/config"
 	"metrics-server/internal/server"
+	"metrics-server/internal/storage"
 	"metrics-server/internal/usecase/context"
 	"os"
-	"time"
 )
-
-func Dumper(app *context.AppContext) {
-	for {
-		app.DB.Dump(app.Cfg.FileStoragePath)
-		time.Sleep(time.Duration(app.Cfg.StoreInterval) * time.Second)
-	}
-}
 
 func main() {
 
@@ -44,7 +37,7 @@ func main() {
 	}
 
 	if cfg.StoreInterval > 0 {
-		go Dumper(app)
+		go storage.Dumper(app)
 	}
 
 	server.HTTPServer(app)
