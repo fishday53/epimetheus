@@ -6,7 +6,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"metrics-server/internal/usecase/context"
 	"net/http"
@@ -31,7 +30,6 @@ type (
 	}
 	hashWriter struct {
 		http.ResponseWriter
-		//Body   []byte
 		Body   *bytes.Buffer
 		Status int
 	}
@@ -54,15 +52,11 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 }
 
 func (w *hashWriter) Write(b []byte) (int, error) {
-	//w.Body = append(w.Body, b...)
-	//return w.ResponseWriter.Write(b)
-	//return len(b), nil
 	return w.Body.Write(b)
 }
 
 func (w *hashWriter) WriteHeader(statusCode int) {
 	w.Status = statusCode
-	//w.ResponseWriter.WriteHeader(statusCode)
 }
 
 func getHash(hashKey string, b []byte) string {
@@ -156,7 +150,6 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			if app.Cfg.HashKey == "" || r.Body == nil {
-				fmt.Println("fuit")
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -173,10 +166,8 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 
 			if clientHash != currentHash {
 				http.Error(w, "bad body sign", http.StatusBadRequest)
-				fmt.Println("bad hash")
 				return
 			}
-			fmt.Println("request_hash", clientHash)
 
 			r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
@@ -187,12 +178,9 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 			}
 
 			next.ServeHTTP(wrapper, r)
-			//next.ServeHTTP(w, r)
 
 			hash := getHash(app.Cfg.HashKey, wrapper.Body.Bytes())
 			w.Header().Set("Hashsha256", hash)
-			fmt.Println("wrapped body:", wrapper.Body.String())
-			fmt.Println("response_hash", hash)
 
 			w.WriteHeader(wrapper.Status)
 			w.Write(wrapper.Body.Bytes())
