@@ -175,20 +175,20 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 
 			r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-			// wrapper := &hashWriter{
-			// 	ResponseWriter: w,
-			// 	status:         http.StatusOK,
-			// }
+			wrapper := &hashWriter{
+				ResponseWriter: w,
+				status:         http.StatusOK,
+			}
 
-			// next.ServeHTTP(wrapper, r)
-			next.ServeHTTP(w, r)
+			next.ServeHTTP(wrapper, r)
+			//next.ServeHTTP(w, r)
 
-			// hash := getHash(app.Cfg.HashKey, wrapper.body)
-			// w.Header().Set("HashSHA256", hash)
-			// fmt.Println("response_hash", hash)
+			hash := getHash(app.Cfg.HashKey, wrapper.body)
+			w.Header().Set("HashSHA256", hash)
+			fmt.Println("response_hash", hash)
 
-			// w.WriteHeader(wrapper.status)
-			// w.Write(wrapper.body)
+			w.WriteHeader(wrapper.status)
+			w.Write(wrapper.body)
 		})
 	}
 }
