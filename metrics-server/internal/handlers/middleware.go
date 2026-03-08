@@ -175,10 +175,11 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 
 			r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-			wrapper := &hashWriter{
-				ResponseWriter: w,
-				status:         http.StatusOK,
-			}
+			// wrapper := &hashWriter{
+			// 	ResponseWriter: w,
+			// 	status:         http.StatusOK,
+			// }
+			wrapper := &hashWriter{}
 
 			next.ServeHTTP(w, r)
 
