@@ -59,7 +59,7 @@ func (w *hashWriter) Write(b []byte) (int, error) {
 
 func (w *hashWriter) WriteHeader(statusCode int) {
 	w.status = statusCode
-	//w.ResponseWriter.WriteHeader(statusCode)
+	w.ResponseWriter.WriteHeader(statusCode)
 }
 
 func getHash(hashKey string, b []byte) string {
