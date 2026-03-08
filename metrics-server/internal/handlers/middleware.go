@@ -191,7 +191,7 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 
 			hash := getHash(app.Cfg.HashKey, wrapper.Body.Bytes())
 			w.Header().Set("Hashsha256", hash)
-			fmt.Println("wrapped body:", string(wrapper.Body.Bytes()))
+			fmt.Println("wrapped body:", wrapper.Body.String())
 			fmt.Println("response_hash", hash)
 
 			w.WriteHeader(wrapper.Status)
