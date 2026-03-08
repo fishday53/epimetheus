@@ -3,6 +3,9 @@ package agent
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -67,12 +70,18 @@ func GetMetrics(cfg *config.Config) (*[]*metrics.Metric, error) {
 	return &m, nil
 }
 
-func SendMetrics(url string, metric *[]*metrics.Metric) error {
+func SendMetrics(url, hashKey string, metric *[]*metrics.Metric) error {
+
+	var hashHeader string
 
 	jsonData, err := json.Marshal(metric)
 
 	if err != nil {
 		return fmt.Errorf("error in marshaller: %v", err)
+	}
+
+	if hashKey != "" {
+		hashHeader = getHash(hashKey, jsonData)
 	}
 
 	var buf bytes.Buffer
@@ -94,6 +103,7 @@ func SendMetrics(url string, metric *[]*metrics.Metric) error {
 
 		req.Header.Set("Content-Encoding", "gzip")
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Hashsha256", hashHeader)
 
 		client := &http.Client{}
 
@@ -108,4 +118,11 @@ func SendMetrics(url string, metric *[]*metrics.Metric) error {
 	}
 
 	return nil
+}
+
+func getHash(hashKey string, b []byte) string {
+	h := hmac.New(sha256.New, []byte(hashKey))
+	h.Write(b[:])
+	hashBytes := h.Sum(nil)
+	return hex.EncodeToString(hashBytes[:])
 }

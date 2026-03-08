@@ -214,8 +214,15 @@ func SetMultiParamJSON(app *context.AppContext) http.HandlerFunc {
 				return
 			}
 		}
+		jsonData, err := json.Marshal(&metrics)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			app.Log.Errorln("Multianswer error:", err)
+			return
+		}
 
 		res.WriteHeader(http.StatusOK)
+		fmt.Fprintf(res, "%s", jsonData)
 	}
 }
 

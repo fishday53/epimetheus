@@ -11,6 +11,7 @@ type Config struct {
 	Addr           string `env:"ADDRESS"`
 	ReportInterval int    `env:"REPORT_INTERVAL"`
 	PollInterval   int    `env:"POLL_INTERVAL"`
+	HashKey        string `env:"KEY"`
 }
 
 func (cfg *Config) Get() error {
@@ -23,6 +24,7 @@ func (cfg *Config) Get() error {
 	addr := flag.String("a", "localhost:8080", "Server address")
 	reportInterval := flag.Int("r", 10, "Report interval")
 	pollInterval := flag.Int("p", 2, "Poll interval")
+	hashKey := flag.String("k", "", "Hash Key")
 	flag.Parse()
 
 	if cfg.Addr == "" {
@@ -33,6 +35,9 @@ func (cfg *Config) Get() error {
 	}
 	if cfg.PollInterval == 0 {
 		cfg.PollInterval = *pollInterval
+	}
+	if cfg.HashKey == "" {
+		cfg.HashKey = *hashKey
 	}
 
 	return nil
