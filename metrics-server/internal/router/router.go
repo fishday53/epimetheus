@@ -12,6 +12,7 @@ func NewMultiplexer(app *context.AppContext) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(handlers.Logger(app))
+	r.Use(handlers.HashHandler(app))
 	r.Use(handlers.GzipHandler(app))
 
 	// legacy plaintext API

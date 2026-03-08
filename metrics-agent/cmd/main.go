@@ -34,7 +34,7 @@ func main() {
 			}
 
 			if len(*m) != 0 {
-				err = agent.SendMetrics(url, m)
+				err = agent.SendMetrics(url, cfg.HashKey, m)
 				if err != nil {
 					log.Printf("Metric send failed. Error:%v\n", err)
 				}

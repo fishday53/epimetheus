@@ -34,7 +34,7 @@ func Test_SendMetric(t *testing.T) {
 			server := httptest.NewServer(handler)
 			defer server.Close()
 
-			gotErr := SendMetrics(server.URL, &[]*metrics.Metric{&randomValue})
+			gotErr := SendMetrics(server.URL, "", &[]*metrics.Metric{&randomValue})
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("sendMetric() failed: %v", gotErr)
