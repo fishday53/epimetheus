@@ -3,240 +3,297 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"metrics-server/internal/config"
-	"metrics-server/internal/log"
 	"metrics-server/internal/storage"
-	"metrics-server/internal/storage/memory"
+	"metrics-server/internal/usecase"
+	"metrics-server/internal/usecase/context"
 	"net/http"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
 )
 
-type AppContext struct {
-	Name string
-	DB   storage.Repositories
-	Log  *zap.SugaredLogger
-	Cfg  *config.Config
-}
+func SetParam(app *context.AppContext) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		var metric usecase.Metric
+		var err error
 
-func NewAppContext(name string, cfg *config.Config) *AppContext {
-	return &AppContext{
-		Name: name,
-		DB:   memory.NewMemStorage(name),
-		Log:  log.NewLogger(),
-		Cfg:  cfg,
-	}
-}
-
-func (ctx *AppContext) SetParam(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
-	var err error
-
-	if req.Method != http.MethodPost {
-		res.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	metric.ID = chi.URLParam(req, "name")
-
-	if metric.ID == "" {
-		res.WriteHeader(http.StatusNotFound)
-		ctx.Log.Errorln("Name is not defined")
-		return
-	}
-
-	metric.MType = chi.URLParam(req, "mtype")
-
-	switch metric.MType {
-	case "gauge":
-		metric.Value, err = storage.StringToGauge(chi.URLParam(req, "value"))
-	case "counter":
-		metric.Delta, err = storage.StringToCounter(chi.URLParam(req, "value"))
-	default:
-		res.WriteHeader(http.StatusBadRequest)
-		ctx.Log.Errorln("Unsupported metric type")
-		return
-	}
-
-	if err != nil {
-		res.WriteHeader(http.StatusBadRequest)
-		ctx.Log.Errorln(err.Error())
-		return
-	}
-
-	_, err = ctx.DB.Set(&metric)
-	if err != nil {
-		res.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if ctx.Cfg.StoreInterval == 0 {
-		err = ctx.DB.Dump(ctx.Cfg.FileStoragePath)
-		if err != nil {
-			res.WriteHeader(http.StatusInternalServerError)
+		if req.Method != http.MethodPost {
+			res.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-	}
 
-	res.WriteHeader(http.StatusOK)
-}
+		metric.ID = chi.URLParam(req, "name")
 
-func (ctx *AppContext) GetParam(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
-	var resultString string
+		if metric.ID == "" {
+			res.WriteHeader(http.StatusNotFound)
+			app.Log.Errorln("Name is not defined")
+			return
+		}
 
-	metric.ID = chi.URLParam(req, "name")
+		metric.MType = chi.URLParam(req, "mtype")
 
-	if metric.ID == "" {
-		res.WriteHeader(http.StatusNotFound)
-		ctx.Log.Errorln("Name is not defined")
-		return
-	}
-
-	metric.MType = chi.URLParam(req, "mtype")
-
-	result, err := ctx.DB.Get(&metric)
-	if err != nil {
-		res.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(res, "Value of %s is absent\n", metric.ID)
-		return
-	}
-
-	switch metric.MType {
-	case "gauge":
-		resultString = storage.GaugeToString(*result.Value)
-	case "counter":
-		resultString = storage.CounterToString(*result.Delta)
-	default:
-		res.WriteHeader(http.StatusBadRequest)
-		ctx.Log.Errorln("Unsupported metric type")
-		return
-	}
-
-	res.Header().Set("Content-Type", "text/html; charset=utf-8")
-	res.WriteHeader(http.StatusOK)
-	fmt.Fprintf(res, "%s\n", resultString)
-}
-
-func (ctx *AppContext) GetAllParams(res http.ResponseWriter, req *http.Request) {
-	var resultString string
-
-	result, err := ctx.DB.GetAll()
-	if err != nil {
-		res.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintf(res, "Something went wrong\n")
-		return
-	}
-
-	res.Header().Set("Content-Type", "text/html; charset=utf-8")
-	res.WriteHeader(http.StatusOK)
-	for _, s := range *result {
-		switch s.MType {
+		switch metric.MType {
 		case "gauge":
-			resultString = storage.GaugeToString(*s.Value)
+			metric.Value, err = storage.StringToGauge(chi.URLParam(req, "value"))
 		case "counter":
-			resultString = storage.CounterToString(*s.Delta)
+			metric.Delta, err = storage.StringToCounter(chi.URLParam(req, "value"))
 		default:
-			res.WriteHeader(http.StatusInternalServerError)
-			ctx.Log.Errorln("Unsupported metric type")
+			res.WriteHeader(http.StatusBadRequest)
+			app.Log.Errorln("Unsupported metric type")
 			return
 		}
-		fmt.Fprintf(res, "%s:\t%s\n", s.ID, resultString)
+
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			app.Log.Errorln(err.Error())
+			return
+		}
+
+		_, err = app.DB.Set(&metric)
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if app.Cfg.StoreInterval == 0 {
+			err = app.DB.Dump(app.Cfg.FileStoragePath)
+			if err != nil {
+				res.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		res.WriteHeader(http.StatusOK)
 	}
 }
 
-func (ctx *AppContext) SetParamJSON(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
+func GetParam(app *context.AppContext) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		var metric usecase.Metric
+		var resultString string
 
-	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		ctx.Log.Errorln(err.Error())
-		return
+		metric.ID = chi.URLParam(req, "name")
+
+		if metric.ID == "" {
+			res.WriteHeader(http.StatusNotFound)
+			app.Log.Errorln("Name is not defined")
+			return
+		}
+
+		metric.MType = chi.URLParam(req, "mtype")
+
+		result, err := app.DB.Get(&metric)
+		if err != nil {
+			res.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(res, "Value of %s is absent\n", metric.ID)
+			return
+		}
+
+		switch metric.MType {
+		case "gauge":
+			resultString = storage.GaugeToString(*result.Value)
+		case "counter":
+			resultString = storage.CounterToString(*result.Delta)
+		default:
+			res.WriteHeader(http.StatusBadRequest)
+			app.Log.Errorln("Unsupported metric type")
+			return
+		}
+
+		res.Header().Set("Content-Type", "text/html; charset=utf-8")
+		res.WriteHeader(http.StatusOK)
+		fmt.Fprintf(res, "%s\n", resultString)
 	}
+}
 
-	if metric.ID == "" {
-		res.WriteHeader(http.StatusNotFound)
-		ctx.Log.Errorln("Name is not defined")
-		return
+func GetAllParams(app *context.AppContext) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		var resultString string
+
+		result, err := app.DB.GetAll()
+		if err != nil {
+			res.WriteHeader(http.StatusBadGateway)
+			fmt.Fprintf(res, "Something went wrong\n")
+			return
+		}
+
+		res.Header().Set("Content-Type", "text/html; charset=utf-8")
+		res.WriteHeader(http.StatusOK)
+		for _, s := range *result {
+			switch s.MType {
+			case "gauge":
+				resultString = storage.GaugeToString(*s.Value)
+			case "counter":
+				resultString = storage.CounterToString(*s.Delta)
+			default:
+				res.WriteHeader(http.StatusInternalServerError)
+				app.Log.Errorln("Unsupported metric type")
+				return
+			}
+			fmt.Fprintf(res, "%s:\t%s\n", s.ID, resultString)
+		}
 	}
+}
 
-	result, err := ctx.DB.Set(&metric)
-	if err != nil {
-		res.WriteHeader(http.StatusBadRequest)
-		return
-	}
+func SetParamJSON(app *context.AppContext) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		var metric usecase.Metric
 
-	jsonData, err := json.Marshal(result)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
-		return
-	}
+		if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			app.Log.Errorln("Cannot decode request:", err)
+			return
+		}
 
-	if ctx.Cfg.StoreInterval == 0 {
-		err = ctx.DB.Dump(ctx.Cfg.FileStoragePath)
+		if metric.ID == "" {
+			res.WriteHeader(http.StatusNotFound)
+			app.Log.Errorln("Name is not defined")
+			return
+		}
+
+		result, err := app.DB.Set(&metric)
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			app.Log.Errorln("Cannot set metric:", err)
+			return
+		}
+
+		jsonData, err := json.Marshal(result)
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(res, "Error in marshaler: %v\n", err)
+			app.Log.Errorln("Error in marshaller:", err)
 			return
 		}
-	}
 
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-	res.WriteHeader(http.StatusOK)
-	fmt.Fprintf(res, "%s", jsonData)
+		if app.Cfg.StoreInterval == 0 {
+			err = app.DB.Dump(app.Cfg.FileStoragePath)
+			if err != nil {
+				res.WriteHeader(http.StatusInternalServerError)
+				app.Log.Errorln("Dump error:", err)
+				return
+			}
+		}
+
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		res.WriteHeader(http.StatusOK)
+		fmt.Fprintf(res, "%s", jsonData)
+	}
 }
 
-func (ctx *AppContext) GetParamJSON(res http.ResponseWriter, req *http.Request) {
-	var metric storage.Metric
+func SetMultiParamJSON(app *context.AppContext) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		var metrics []usecase.Metric
 
-	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		ctx.Log.Errorln(err.Error())
-		return
+		if err := json.NewDecoder(req.Body).Decode(&metrics); err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			app.Log.Errorln("Cannot decode request:", err)
+			return
+		}
+
+		for _, metric := range metrics {
+			if metric.ID == "" {
+				res.WriteHeader(http.StatusNotFound)
+				app.Log.Errorln("Name is not defined")
+				return
+			}
+			_, err := app.DB.Set(&metric)
+			if err != nil {
+				res.WriteHeader(http.StatusBadRequest)
+				app.Log.Errorln("Cannot set metric:", err)
+				return
+			}
+		}
+
+		if app.Cfg.StoreInterval == 0 {
+			err := app.DB.Dump(app.Cfg.FileStoragePath)
+			if err != nil {
+				res.WriteHeader(http.StatusInternalServerError)
+				app.Log.Errorln("Dump error:", err)
+				return
+			}
+		}
+
+		res.WriteHeader(http.StatusOK)
 	}
-
-	if metric.ID == "" {
-		res.WriteHeader(http.StatusNotFound)
-		ctx.Log.Errorln("Name is not defined")
-		return
-	}
-
-	result, err := ctx.DB.Get(&metric)
-	if err != nil {
-		res.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(res, "Value of %s is absent\n", metric.ID)
-		return
-	}
-
-	jsonData, err := json.Marshal(result)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
-		return
-	}
-
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-	res.WriteHeader(http.StatusOK)
-	fmt.Fprintf(res, "%s", jsonData)
 }
 
-func (ctx *AppContext) GetAllParamsJSON(res http.ResponseWriter, req *http.Request) {
-	result, err := ctx.DB.GetAll()
-	if err != nil {
-		res.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintf(res, "Something went wrong\n")
-		return
-	}
+func GetParamJSON(app *context.AppContext) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		var metric usecase.Metric
 
-	jsonData, err := json.Marshal(*result)
-	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(res, "Error in marshaler: %v\n", err)
-		return
-	}
+		if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			app.Log.Errorln(err.Error())
+			return
+		}
 
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-	res.WriteHeader(http.StatusOK)
-	fmt.Fprintf(res, "%s", jsonData)
+		if metric.ID == "" {
+			res.WriteHeader(http.StatusNotFound)
+			app.Log.Errorln("Name is not defined")
+			return
+		}
+
+		result, err := app.DB.Get(&metric)
+		if err != nil {
+			res.WriteHeader(http.StatusNotFound)
+			fmt.Fprintf(res, "Value of %s is absent\n", metric.ID)
+			app.Log.Errorln("Cannot get metric:", err)
+			return
+		}
+
+		jsonData, err := json.Marshal(result)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(res, "Error in marshaller: %v\n", err)
+			app.Log.Errorln("Error in marshaller:", err)
+			return
+		}
+
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		res.WriteHeader(http.StatusOK)
+		fmt.Fprintf(res, "%s", jsonData)
+	}
+}
+
+func GetAllParamsJSON(app *context.AppContext) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		result, err := app.DB.GetAll()
+		if err != nil {
+			res.WriteHeader(http.StatusBadGateway)
+			fmt.Fprintf(res, "Something went wrong\n")
+			app.Log.Errorln("Cannot get all metrics:", err)
+			return
+		}
+
+		jsonData, err := json.Marshal(*result)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(res, "Error in marshaller: %v\n", err)
+			app.Log.Errorln("Error in marchaller:", err)
+			return
+		}
+
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		res.WriteHeader(http.StatusOK)
+		fmt.Fprintf(res, "%s", jsonData)
+	}
+}
+
+func CheckDBConnect(app *context.AppContext) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+
+		if app.Cfg.DSN == "" {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if err := app.DB.Ping(); err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			app.Log.Errorln("DB check test failed:", err)
+		}
+
+		res.WriteHeader(http.StatusOK)
+	}
 }
