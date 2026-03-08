@@ -193,6 +193,7 @@ func SetMultiParamJSON(app *context.AppContext) http.HandlerFunc {
 		}
 
 		for _, metric := range metrics {
+			fmt.Println("metric:", metric.ID)
 			if metric.ID == "" {
 				res.WriteHeader(http.StatusNotFound)
 				app.Log.Errorln("Name is not defined")
@@ -214,8 +215,15 @@ func SetMultiParamJSON(app *context.AppContext) http.HandlerFunc {
 				return
 			}
 		}
-
+		jsonData, err := json.Marshal(&metrics)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			app.Log.Errorln("Multianswer error:", err)
+			return
+		}
+		//fmt.Println("SetMultiParamJSON4:", jsonData)
 		res.WriteHeader(http.StatusOK)
+		fmt.Fprintf(res, "%s", jsonData)
 	}
 }
 

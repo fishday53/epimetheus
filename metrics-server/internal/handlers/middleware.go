@@ -31,8 +31,9 @@ type (
 	}
 	hashWriter struct {
 		http.ResponseWriter
-		body   []byte
-		status int
+		//Body   []byte
+		Body   *bytes.Buffer
+		Status int
 	}
 )
 
@@ -53,13 +54,15 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 }
 
 func (w *hashWriter) Write(b []byte) (int, error) {
-	w.body = append(w.body, b...)
-	return w.ResponseWriter.Write(b)
+	//w.Body = append(w.Body, b...)
+	//return w.ResponseWriter.Write(b)
+	//return len(b), nil
+	return w.Body.Write(b)
 }
 
 func (w *hashWriter) WriteHeader(statusCode int) {
-	w.status = statusCode
-	w.ResponseWriter.WriteHeader(statusCode)
+	w.Status = statusCode
+	//w.ResponseWriter.WriteHeader(statusCode)
 }
 
 func getHash(hashKey string, b []byte) string {
@@ -179,18 +182,20 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 
 			wrapper := &hashWriter{
 				ResponseWriter: w,
-				status:         http.StatusOK,
+				Body:           &bytes.Buffer{},
+				Status:         http.StatusOK,
 			}
 
 			next.ServeHTTP(wrapper, r)
 			//next.ServeHTTP(w, r)
 
-			hash := getHash(app.Cfg.HashKey, wrapper.body)
+			hash := getHash(app.Cfg.HashKey, wrapper.Body.Bytes())
 			w.Header().Set("Hashsha256", hash)
+			fmt.Println("wrapped body:", string(wrapper.Body.Bytes()))
 			fmt.Println("response_hash", hash)
 
-			w.WriteHeader(wrapper.status)
-			w.Write(wrapper.body)
+			w.WriteHeader(wrapper.Status)
+			w.Write(wrapper.Body.Bytes())
 		})
 	}
 }
