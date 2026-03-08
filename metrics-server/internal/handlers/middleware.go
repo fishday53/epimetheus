@@ -164,7 +164,7 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 			}
 			r.Body.Close()
 
-			clientHash := r.Header.Get("HashSHA256")
+			clientHash := r.Header.Get("Hashsha256")
 			currentHash := getHash(app.Cfg.HashKey, bodyBytes)
 
 			if clientHash != currentHash {

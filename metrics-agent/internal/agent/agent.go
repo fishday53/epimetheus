@@ -103,7 +103,7 @@ func SendMetrics(url, hashKey string, metric *[]*metrics.Metric) error {
 
 		req.Header.Set("Content-Encoding", "gzip")
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("HashSHA256", hashHeader)
+		req.Header.Set("Hashsha256", hashHeader)
 
 		client := &http.Client{}
 
