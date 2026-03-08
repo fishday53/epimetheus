@@ -80,6 +80,10 @@ func SendMetrics(url, hashKey string, metric *[]*metrics.Metric) error {
 		return fmt.Errorf("error in marshaller: %v", err)
 	}
 
+	if hashKey != "" {
+		hashHeader = getHash(hashKey, jsonData)
+	}
+
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
 	if _, err := gw.Write(jsonData); err != nil {
@@ -87,10 +91,6 @@ func SendMetrics(url, hashKey string, metric *[]*metrics.Metric) error {
 	}
 	if err := gw.Close(); err != nil {
 		return fmt.Errorf("error closing gzip writer: %v", err)
-	}
-
-	if hashKey != "" {
-		hashHeader = getHash(hashKey, buf.Bytes())
 	}
 
 	for _, backoff := range backoffSchedule {

@@ -153,6 +153,7 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			if app.Cfg.HashKey == "" || r.Body == nil {
+				fmt.Println("fuit")
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -169,6 +170,7 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 
 			if clientHash != currentHash {
 				http.Error(w, "bad body sign", http.StatusBadRequest)
+				fmt.Println("bad hash")
 				return
 			}
 			fmt.Println("request_hash", clientHash)
@@ -184,7 +186,7 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 			//next.ServeHTTP(w, r)
 
 			hash := getHash(app.Cfg.HashKey, wrapper.body)
-			w.Header().Set("HashSHA256", hash)
+			w.Header().Set("Hashsha256", hash)
 			fmt.Println("response_hash", hash)
 
 			w.WriteHeader(wrapper.status)
