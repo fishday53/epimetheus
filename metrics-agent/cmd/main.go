@@ -4,13 +4,18 @@ import (
 	"log"
 	"metrics-agent/internal/agent"
 	"metrics-agent/internal/config"
+	"metrics-agent/internal/metrics"
 	"os"
 	"time"
 )
 
 func main() {
 
-	var cfg config.Config
+	var (
+		cfg config.Config
+		m   *[]*metrics.Metric
+		err error
+	)
 
 	log.SetOutput(os.Stdout)
 
@@ -27,20 +32,19 @@ func main() {
 
 	for {
 		for i := 0; i < (cfg.ReportInterval / cfg.PollInterval); i++ {
-
-			m, err := agent.GetMetrics(&cfg)
+			m, err = agent.GetMetrics(&cfg)
 			if err != nil {
 				log.Printf("Cannot get metrics: %v\n", err)
 			}
 
-			if len(*m) != 0 {
-				err = agent.SendMetrics(url, cfg.HashKey, m)
-				if err != nil {
-					log.Printf("Metric send failed. Error:%v\n", err)
-				}
-			}
-
 			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
+		}
+
+		if len(*m) != 0 {
+			err = agent.SendMetrics(url, cfg.HashKey, m)
+			if err != nil {
+				log.Printf("Metric send failed. Error:%v\n", err)
+			}
 		}
 	}
 }

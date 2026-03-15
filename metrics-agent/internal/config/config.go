@@ -12,6 +12,7 @@ type Config struct {
 	ReportInterval int    `env:"REPORT_INTERVAL"`
 	PollInterval   int    `env:"POLL_INTERVAL"`
 	HashKey        string `env:"KEY"`
+	RateLimit      int    `env:"RATE_LIMIT"`
 }
 
 func (cfg *Config) Get() error {
@@ -25,6 +26,7 @@ func (cfg *Config) Get() error {
 	reportInterval := flag.Int("r", 10, "Report interval")
 	pollInterval := flag.Int("p", 2, "Poll interval")
 	hashKey := flag.String("k", "", "Hash Key")
+	rateLimit := flag.Int("l", 1, "Rate limit")
 	flag.Parse()
 
 	if cfg.Addr == "" {
@@ -38,6 +40,9 @@ func (cfg *Config) Get() error {
 	}
 	if cfg.HashKey == "" {
 		cfg.HashKey = *hashKey
+	}
+	if cfg.RateLimit == 0 {
+		cfg.RateLimit = *rateLimit
 	}
 
 	return nil
