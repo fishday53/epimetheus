@@ -13,6 +13,7 @@ type Config struct {
 	PollInterval   int    `env:"POLL_INTERVAL"`
 	HashKey        string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
+	BufferSize     int
 }
 
 func (cfg *Config) Get() error {

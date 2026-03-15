@@ -14,6 +14,7 @@ import (
 	"metrics-agent/internal/metrics"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -25,52 +26,7 @@ var backoffSchedule = []time.Duration{
 	5 * time.Second,
 }
 
-func GetMetrics(cfg *config.Config) (*[]*metrics.Metric, error) {
-
-	var m []*metrics.Metric
-
-	log.SetOutput(os.Stdout)
-
-	// RunTime metrics
-	for _, metricName := range metrics.MetricList {
-
-		value, err := metrics.GetRuntimeMetric(metricName)
-		if err != nil {
-			log.Printf("%s error: %v\n", metricName, err)
-		} else {
-			log.Printf("%s=%f\n", metricName, value)
-		}
-
-		metric := metrics.Metric{
-			ID:    metricName,
-			MType: "gauge",
-			Value: &value,
-		}
-
-		m = append(m, &metric)
-	}
-
-	// Additional counter
-	pollCount := metrics.Metric{
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: &tick,
-	}
-	m = append(m, &pollCount)
-
-	// Additional gauge
-	rnd := rand.Float64()
-	randomValue := metrics.Metric{
-		ID:    "RandomValue",
-		MType: "gauge",
-		Value: &rnd,
-	}
-	m = append(m, &randomValue)
-
-	return &m, nil
-}
-
-func SendMetrics(url, hashKey string, metric *[]*metrics.Metric) error {
+func SendMetrics(url, hashKey string, metric *metrics.Batch) error {
 
 	var hashHeader string
 
@@ -125,4 +81,149 @@ func getHash(hashKey string, b []byte) string {
 	h.Write(b[:])
 	hashBytes := h.Sum(nil)
 	return hex.EncodeToString(hashBytes[:])
+}
+
+func GetMetrics1(cfg *config.Config) chan *metrics.Batch {
+
+	outChan := make(chan *metrics.Batch, cfg.BufferSize)
+
+	go func() {
+		defer close(outChan)
+		var m metrics.Batch
+
+		log.SetOutput(os.Stdout)
+
+		for {
+			// RunTime metrics
+			for _, metricName := range metrics.MetricList {
+
+				value, err := metrics.GetRuntimeMetric(metricName)
+				if err != nil {
+					log.Printf("%s error: %v\n", metricName, err)
+				} else {
+					log.Printf("%s=%f\n", metricName, value)
+				}
+
+				metric := metrics.Metric{
+					ID:    metricName,
+					MType: "gauge",
+					Value: &value,
+				}
+
+				m = append(m, &metric)
+			}
+
+			// Additional counter
+			pollCount := metrics.Metric{
+				ID:    "PollCount",
+				MType: "counter",
+				Delta: &tick,
+			}
+			m = append(m, &pollCount)
+
+			// Additional gauge
+			rnd := rand.Float64()
+			randomValue := metrics.Metric{
+				ID:    "RandomValue",
+				MType: "gauge",
+				Value: &rnd,
+			}
+			m = append(m, &randomValue)
+
+			outChan <- &m
+
+			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
+		}
+	}()
+
+	return outChan
+}
+
+func GetMetrics15(cfg *config.Config) chan *metrics.Batch {
+
+	outChan := make(chan *metrics.Batch, cfg.BufferSize)
+
+	go func() {
+		defer close(outChan)
+		var m metrics.Batch
+
+		log.SetOutput(os.Stdout)
+
+		for {
+			// VM metrics from PS
+			for _, metricName := range metrics.VMMetrics {
+
+				value, err := metrics.GetVMStatMetric(metricName)
+				if err != nil {
+					log.Printf("%s error: %v\n", metricName, err)
+				} else {
+					log.Printf("%s=%f\n", metricName, value)
+				}
+
+				metric := metrics.Metric{
+					ID:    metricName,
+					MType: "gauge",
+					Value: &value,
+				}
+
+				m = append(m, &metric)
+			}
+
+			// CPU utilizarion from PS
+			cpuUtil, err := metrics.GetCPUTotal()
+			if err != nil {
+				log.Printf("CPUutilization1 error: %v\n", err)
+			} else {
+				log.Printf("CPUutilization1=%f\n", cpuUtil)
+			}
+			randomValue := metrics.Metric{
+				ID:    "CPUutilization1",
+				MType: "gauge",
+				Value: &cpuUtil,
+			}
+			m = append(m, &randomValue)
+
+			outChan <- &m
+
+			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
+		}
+	}()
+
+	return outChan
+}
+
+func FanIn(chs ...chan *metrics.Batch) chan *metrics.Batch {
+	finalCh := make(chan *metrics.Batch)
+
+	var wg sync.WaitGroup
+
+	for _, ch := range chs {
+		chClosure := ch
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			for data := range chClosure {
+				finalCh <- data
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(finalCh)
+	}()
+
+	return finalCh
+}
+
+func SendWorker(id int, cfg *config.Config, url string, jobs <-chan *metrics.Batch) {
+	for j := range jobs {
+		err := SendMetrics(url, cfg.HashKey, j)
+		if err != nil {
+			log.Printf("Metric send failed. Error:%v\n", err)
+		}
+		time.Sleep(time.Duration(cfg.ReportInterval) * time.Second)
+	}
 }

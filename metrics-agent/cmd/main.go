@@ -1,20 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"metrics-agent/internal/agent"
 	"metrics-agent/internal/config"
-	"metrics-agent/internal/metrics"
 	"os"
-	"time"
 )
 
 func main() {
 
 	var (
 		cfg config.Config
-		m   *[]*metrics.Metric
-		err error
 	)
 
 	log.SetOutput(os.Stdout)
@@ -25,26 +22,19 @@ func main() {
 	}
 
 	const (
-		proto = "http://"
-		path  = "/updates/"
+		proto  = "http://"
+		path   = "/updates/"
+		buffer = 1000
 	)
+
 	url := proto + cfg.Addr + path
+	cfg.BufferSize = buffer
 
-	for {
-		for i := 0; i < (cfg.ReportInterval / cfg.PollInterval); i++ {
-			m, err = agent.GetMetrics(&cfg)
-			if err != nil {
-				log.Printf("Cannot get metrics: %v\n", err)
-			}
+	ch1 := agent.GetMetrics1(&cfg)
+	ch2 := agent.GetMetrics15(&cfg)
 
-			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
-		}
-
-		if len(*m) != 0 {
-			err = agent.SendMetrics(url, cfg.HashKey, m)
-			if err != nil {
-				log.Printf("Metric send failed. Error:%v\n", err)
-			}
-		}
+	for w := 1; w <= cfg.RateLimit; w++ {
+		fmt.Println(w)
+		go agent.SendWorker(w, &cfg, url, agent.FanIn(ch1, ch2))
 	}
 }
