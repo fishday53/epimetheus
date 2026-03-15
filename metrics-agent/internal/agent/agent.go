@@ -117,7 +117,7 @@ func GetMetrics1(cfg *config.Config) chan *metrics.Batch {
 				MType: "counter",
 				Delta: &tick,
 			}
-			log.Printf("PollCount=%f\n", tick)
+			log.Printf("PollCount=%d\n", tick)
 			m = append(m, &pollCount)
 
 			// Additional gauge
