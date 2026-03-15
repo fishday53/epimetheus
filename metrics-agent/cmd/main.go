@@ -1,16 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"metrics-agent/internal/agent"
 	"metrics-agent/internal/config"
 	"os"
+	"sync"
 )
 
 func main() {
 
 	var (
+		wg  sync.WaitGroup
 		cfg config.Config
 	)
 
@@ -24,7 +25,7 @@ func main() {
 	const (
 		proto  = "http://"
 		path   = "/updates/"
-		buffer = 1000
+		buffer = 100
 	)
 
 	url := proto + cfg.Addr + path
@@ -34,7 +35,9 @@ func main() {
 	ch2 := agent.GetMetrics15(&cfg)
 
 	for w := 1; w <= cfg.RateLimit; w++ {
-		fmt.Println(w)
-		go agent.SendWorker(w, &cfg, url, agent.FanIn(ch1, ch2))
+		wg.Add(1)
+		go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2))
 	}
+
+	wg.Wait()
 }

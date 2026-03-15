@@ -27,7 +27,6 @@ var backoffSchedule = []time.Duration{
 }
 
 func SendMetrics(url, hashKey string, metric *metrics.Batch) error {
-
 	var hashHeader string
 
 	jsonData, err := json.Marshal(metric)
@@ -84,16 +83,15 @@ func getHash(hashKey string, b []byte) string {
 }
 
 func GetMetrics1(cfg *config.Config) chan *metrics.Batch {
-
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
 
 	go func() {
 		defer close(outChan)
-		var m metrics.Batch
 
 		log.SetOutput(os.Stdout)
 
 		for {
+			var m metrics.Batch
 			// RunTime metrics
 			for _, metricName := range metrics.MetricList {
 
@@ -119,6 +117,7 @@ func GetMetrics1(cfg *config.Config) chan *metrics.Batch {
 				MType: "counter",
 				Delta: &tick,
 			}
+			log.Printf("PollCount=%f\n", tick)
 			m = append(m, &pollCount)
 
 			// Additional gauge
@@ -128,6 +127,7 @@ func GetMetrics1(cfg *config.Config) chan *metrics.Batch {
 				MType: "gauge",
 				Value: &rnd,
 			}
+			log.Printf("RandomValue=%f\n", rnd)
 			m = append(m, &randomValue)
 
 			outChan <- &m
@@ -140,16 +140,15 @@ func GetMetrics1(cfg *config.Config) chan *metrics.Batch {
 }
 
 func GetMetrics15(cfg *config.Config) chan *metrics.Batch {
-
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
 
 	go func() {
 		defer close(outChan)
-		var m metrics.Batch
 
 		log.SetOutput(os.Stdout)
 
 		for {
+			var m metrics.Batch
 			// VM metrics from PS
 			for _, metricName := range metrics.VMMetrics {
 
@@ -176,12 +175,13 @@ func GetMetrics15(cfg *config.Config) chan *metrics.Batch {
 			} else {
 				log.Printf("CPUutilization1=%f\n", cpuUtil)
 			}
-			randomValue := metrics.Metric{
+			cpuUtilValue := metrics.Metric{
 				ID:    "CPUutilization1",
 				MType: "gauge",
 				Value: &cpuUtil,
 			}
-			m = append(m, &randomValue)
+			log.Printf("CPUutilization1=%f\n", cpuUtil)
+			m = append(m, &cpuUtilValue)
 
 			outChan <- &m
 
@@ -218,12 +218,15 @@ func FanIn(chs ...chan *metrics.Batch) chan *metrics.Batch {
 	return finalCh
 }
 
-func SendWorker(id int, cfg *config.Config, url string, jobs <-chan *metrics.Batch) {
+func SendWorker(wg *sync.WaitGroup, cfg *config.Config, url string, jobs <-chan *metrics.Batch) {
+	defer wg.Done()
+
 	for j := range jobs {
 		err := SendMetrics(url, cfg.HashKey, j)
 		if err != nil {
 			log.Printf("Metric send failed. Error:%v\n", err)
 		}
+
 		time.Sleep(time.Duration(cfg.ReportInterval) * time.Second)
 	}
 }

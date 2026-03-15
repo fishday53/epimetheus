@@ -18,6 +18,8 @@ type Config struct {
 
 func (cfg *Config) Get() error {
 
+	const rateBurst = 2
+
 	err := env.Parse(cfg)
 	if err != nil {
 		return fmt.Errorf("config parse error:%v", err)
@@ -27,7 +29,7 @@ func (cfg *Config) Get() error {
 	reportInterval := flag.Int("r", 10, "Report interval")
 	pollInterval := flag.Int("p", 2, "Poll interval")
 	hashKey := flag.String("k", "", "Hash Key")
-	rateLimit := flag.Int("l", 1, "Rate limit")
+	rateLimit := flag.Int("l", 0, "Rate limit")
 	flag.Parse()
 
 	if cfg.Addr == "" {
@@ -43,7 +45,11 @@ func (cfg *Config) Get() error {
 		cfg.HashKey = *hashKey
 	}
 	if cfg.RateLimit == 0 {
-		cfg.RateLimit = *rateLimit
+		if *rateLimit != 0 {
+			cfg.RateLimit = *rateLimit
+		} else {
+			cfg.RateLimit = cfg.ReportInterval / cfg.PollInterval * rateBurst
+		}
 	}
 
 	return nil

@@ -86,7 +86,7 @@ func GetVMStatMetric(name string) (float64, error) {
 		return 0, fmt.Errorf("can't get %s: %v", name, err)
 	}
 
-	v := reflect.ValueOf(vmStat)
+	v := reflect.ValueOf(*vmStat)
 	fieldValue := v.FieldByName(name)
 	if !fieldValue.IsValid() {
 		return 0, fmt.Errorf("value with name %s is absent", name)
