@@ -82,7 +82,7 @@ func getHash(hashKey string, b []byte) string {
 	return hex.EncodeToString(hashBytes[:])
 }
 
-func GetMetrics1(cfg *config.Config) chan *metrics.Batch {
+func GetMetricsRuntime(cfg *config.Config) chan *metrics.Batch {
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
 
 	go func() {
@@ -139,7 +139,7 @@ func GetMetrics1(cfg *config.Config) chan *metrics.Batch {
 	return outChan
 }
 
-func GetMetrics15(cfg *config.Config) chan *metrics.Batch {
+func GetMetricsVMstat(cfg *config.Config) chan *metrics.Batch {
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
 
 	go func() {

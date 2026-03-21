@@ -23,16 +23,15 @@ func main() {
 	}
 
 	const (
-		proto  = "http://"
-		path   = "/updates/"
-		buffer = 100
+		proto = "http://"
+		path  = "/updates/"
 	)
 
 	url := proto + cfg.Addr + path
-	cfg.BufferSize = buffer
+	cfg.BufferSize = 100
 
-	ch1 := agent.GetMetrics1(&cfg)
-	ch2 := agent.GetMetrics15(&cfg)
+	ch1 := agent.GetMetricsRuntime(&cfg)
+	ch2 := agent.GetMetricsVMstat(&cfg)
 
 	for w := 1; w <= cfg.RateLimit; w++ {
 		wg.Add(1)
