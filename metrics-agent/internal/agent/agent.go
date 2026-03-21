@@ -84,13 +84,15 @@ func getHash(hashKey string, b []byte) string {
 
 func GetMetricsRuntime(cfg *config.Config) chan *metrics.Batch {
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
+	ticker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
 
 	go func() {
 		defer close(outChan)
+		defer ticker.Stop()
 
 		log.SetOutput(os.Stdout)
 
-		for {
+		for range ticker.C {
 			var m metrics.Batch
 			// RunTime metrics
 			for _, metricName := range metrics.MetricList {
@@ -131,8 +133,6 @@ func GetMetricsRuntime(cfg *config.Config) chan *metrics.Batch {
 			m = append(m, &randomValue)
 
 			outChan <- &m
-
-			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
 		}
 	}()
 
@@ -141,13 +141,15 @@ func GetMetricsRuntime(cfg *config.Config) chan *metrics.Batch {
 
 func GetMetricsVMstat(cfg *config.Config) chan *metrics.Batch {
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
+	ticker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
 
 	go func() {
 		defer close(outChan)
+		defer ticker.Stop()
 
 		log.SetOutput(os.Stdout)
 
-		for {
+		for range ticker.C {
 			var m metrics.Batch
 			// VM metrics from PS
 			for _, metricName := range metrics.VMMetrics {
@@ -184,8 +186,6 @@ func GetMetricsVMstat(cfg *config.Config) chan *metrics.Batch {
 			m = append(m, &cpuUtilValue)
 
 			outChan <- &m
-
-			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
 		}
 	}()
 
@@ -219,14 +219,16 @@ func FanIn(chs ...chan *metrics.Batch) chan *metrics.Batch {
 }
 
 func SendWorker(wg *sync.WaitGroup, cfg *config.Config, url string, jobs <-chan *metrics.Batch) {
+	ticker := time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second)
+	defer ticker.Stop()
+
 	defer wg.Done()
 
-	for j := range jobs {
+	for range ticker.C {
+		j := <-jobs
 		err := SendMetrics(url, cfg.HashKey, j)
 		if err != nil {
 			log.Printf("Metric send failed. Error:%v\n", err)
 		}
-
-		time.Sleep(time.Duration(cfg.ReportInterval) * time.Second)
 	}
 }
