@@ -4,8 +4,10 @@ import (
 	"log"
 	"metrics-agent/internal/agent"
 	"metrics-agent/internal/config"
+	"metrics-agent/internal/ratelimit"
 	"os"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -33,10 +35,10 @@ func main() {
 	ch1 := agent.GetMetricsRuntime(&cfg)
 	ch2 := agent.GetMetricsVMstat(&cfg)
 
-	for w := 1; w <= cfg.RateLimit; w++ {
-		wg.Add(1)
-		go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2))
-	}
+	rateLimit := ratelimit.NewTokenBucketLimiter(cfg.RateLimit, time.Second*1)
+
+	wg.Add(1)
+	go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2), rateLimit)
 
 	wg.Wait()
 }

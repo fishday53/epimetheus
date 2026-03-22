@@ -12,6 +12,7 @@ import (
 	"math/rand/v2"
 	"metrics-agent/internal/config"
 	"metrics-agent/internal/metrics"
+	"metrics-agent/internal/ratelimit"
 	"net/http"
 	"os"
 	"sync"
@@ -184,7 +185,6 @@ func GetMetricsVMstat(cfg *config.Config) chan *metrics.Batch {
 			}
 			log.Printf("CPUutilization1=%f\n", cpuUtil)
 			m = append(m, &cpuUtilValue)
-
 			outChan <- &m
 		}
 	}()
@@ -218,17 +218,26 @@ func FanIn(chs ...chan *metrics.Batch) chan *metrics.Batch {
 	return finalCh
 }
 
-func SendWorker(wg *sync.WaitGroup, cfg *config.Config, url string, jobs <-chan *metrics.Batch) {
+func SendWorker(wg *sync.WaitGroup, cfg *config.Config, url string, jobs <-chan *metrics.Batch, limit *ratelimit.TokenBucketLimiter) {
 	ticker := time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second)
 	defer ticker.Stop()
 
 	defer wg.Done()
 
 	for range ticker.C {
-		j := <-jobs
-		err := SendMetrics(url, cfg.HashKey, j)
-		if err != nil {
-			log.Printf("Metric send failed. Error:%v\n", err)
+	SendLoop:
+		for {
+			for limit.Allow() {
+				select {
+				case j := <-jobs:
+					err := SendMetrics(url, cfg.HashKey, j)
+					if err != nil {
+						log.Printf("Metric send failed. Error:%v\n", err)
+					}
+				default:
+					break SendLoop
+				}
+			}
 		}
 	}
 }
