@@ -3,6 +3,7 @@ package agent
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -83,7 +84,7 @@ func getHash(hashKey string, b []byte) string {
 	return hex.EncodeToString(hashBytes[:])
 }
 
-func GetMetricsRuntime(cfg *config.Config) chan *metrics.Batch {
+func GetMetricsRuntime(ctx context.Context, cfg *config.Config) chan *metrics.Batch {
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
 	ticker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
 
@@ -93,54 +94,59 @@ func GetMetricsRuntime(cfg *config.Config) chan *metrics.Batch {
 
 		log.SetOutput(os.Stdout)
 
-		for range ticker.C {
-			var m metrics.Batch
-			// RunTime metrics
-			for _, metricName := range metrics.MetricList {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				var m metrics.Batch
+				// RunTime metrics
+				for _, metricName := range metrics.MetricList {
 
-				value, err := metrics.GetRuntimeMetric(metricName)
-				if err != nil {
-					log.Printf("%s error: %v\n", metricName, err)
-				} else {
-					log.Printf("%s=%f\n", metricName, value)
+					value, err := metrics.GetRuntimeMetric(metricName)
+					if err != nil {
+						log.Printf("%s error: %v\n", metricName, err)
+					} else {
+						log.Printf("%s=%f\n", metricName, value)
+					}
+
+					metric := metrics.Metric{
+						ID:    metricName,
+						MType: "gauge",
+						Value: &value,
+					}
+
+					m = append(m, &metric)
 				}
 
-				metric := metrics.Metric{
-					ID:    metricName,
+				// Additional counter
+				pollCount := metrics.Metric{
+					ID:    "PollCount",
+					MType: "counter",
+					Delta: &tick,
+				}
+				log.Printf("PollCount=%d\n", tick)
+				m = append(m, &pollCount)
+
+				// Additional gauge
+				rnd := rand.Float64()
+				randomValue := metrics.Metric{
+					ID:    "RandomValue",
 					MType: "gauge",
-					Value: &value,
+					Value: &rnd,
 				}
+				log.Printf("RandomValue=%f\n", rnd)
+				m = append(m, &randomValue)
 
-				m = append(m, &metric)
+				outChan <- &m
 			}
-
-			// Additional counter
-			pollCount := metrics.Metric{
-				ID:    "PollCount",
-				MType: "counter",
-				Delta: &tick,
-			}
-			log.Printf("PollCount=%d\n", tick)
-			m = append(m, &pollCount)
-
-			// Additional gauge
-			rnd := rand.Float64()
-			randomValue := metrics.Metric{
-				ID:    "RandomValue",
-				MType: "gauge",
-				Value: &rnd,
-			}
-			log.Printf("RandomValue=%f\n", rnd)
-			m = append(m, &randomValue)
-
-			outChan <- &m
 		}
 	}()
 
 	return outChan
 }
 
-func GetMetricsVMstat(cfg *config.Config) chan *metrics.Batch {
+func GetMetricsVMstat(ctx context.Context, cfg *config.Config) chan *metrics.Batch {
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
 	ticker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
 
@@ -150,42 +156,47 @@ func GetMetricsVMstat(cfg *config.Config) chan *metrics.Batch {
 
 		log.SetOutput(os.Stdout)
 
-		for range ticker.C {
-			var m metrics.Batch
-			// VM metrics from PS
-			for _, metricName := range metrics.VMMetrics {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				var m metrics.Batch
+				// VM metrics from PS
+				for _, metricName := range metrics.VMMetrics {
 
-				value, err := metrics.GetVMStatMetric(metricName)
+					value, err := metrics.GetVMStatMetric(metricName)
+					if err != nil {
+						log.Printf("%s error: %v\n", metricName, err)
+					} else {
+						log.Printf("%s=%f\n", metricName, value)
+					}
+
+					metric := metrics.Metric{
+						ID:    metricName,
+						MType: "gauge",
+						Value: &value,
+					}
+
+					m = append(m, &metric)
+				}
+
+				// CPU utilizarion from PS
+				cpuUtil, err := metrics.GetCPUTotal()
 				if err != nil {
-					log.Printf("%s error: %v\n", metricName, err)
+					log.Printf("CPUutilization1 error: %v\n", err)
 				} else {
-					log.Printf("%s=%f\n", metricName, value)
+					log.Printf("CPUutilization1=%f\n", cpuUtil)
 				}
-
-				metric := metrics.Metric{
-					ID:    metricName,
+				cpuUtilValue := metrics.Metric{
+					ID:    "CPUutilization1",
 					MType: "gauge",
-					Value: &value,
+					Value: &cpuUtil,
 				}
-
-				m = append(m, &metric)
-			}
-
-			// CPU utilizarion from PS
-			cpuUtil, err := metrics.GetCPUTotal()
-			if err != nil {
-				log.Printf("CPUutilization1 error: %v\n", err)
-			} else {
 				log.Printf("CPUutilization1=%f\n", cpuUtil)
+				m = append(m, &cpuUtilValue)
+				outChan <- &m
 			}
-			cpuUtilValue := metrics.Metric{
-				ID:    "CPUutilization1",
-				MType: "gauge",
-				Value: &cpuUtil,
-			}
-			log.Printf("CPUutilization1=%f\n", cpuUtil)
-			m = append(m, &cpuUtilValue)
-			outChan <- &m
 		}
 	}()
 
