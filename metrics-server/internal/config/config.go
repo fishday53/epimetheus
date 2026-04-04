@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -49,14 +50,16 @@ func (cfg *Config) Get() error {
 		return fmt.Errorf("cannot parse env: %v", err)
 	}
 
-	flag.Var(&addr, "a", "Listen address. Format host:port, default localhost:8080")
-	storeIntervalFlag := flag.Int("i", 300, "Store interval. Format int, default 300.")
-	restoreFlag := flag.Bool("r", true, "Restore data from disk on start. Format bool, default true.")
-	fileStoragePathFlag := flag.String("f", "metrics.dmp", "File to store data. Format string, default metrics.dmp.")
-	dsnFlag := flag.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
-	hashKey := flag.String("k", "", "Hash Key")
+	fs := flag.NewFlagSet("metrics-server", flag.ContinueOnError)
 
-	flag.Parse()
+	fs.Var(&addr, "a", "Listen address. Format host:port, default localhost:8080")
+	storeIntervalFlag := fs.Int("i", 300, "Store interval. Format int, default 300.")
+	restoreFlag := fs.Bool("r", true, "Restore data from disk on start. Format bool, default true.")
+	fileStoragePathFlag := fs.String("f", "metrics.dmp", "File to store data. Format string, default metrics.dmp.")
+	dsnFlag := fs.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
+	hashKey := fs.String("k", "", "Hash Key")
+
+	fs.Parse(os.Args[1:])
 
 	if cfg.Addr != "" {
 		if err = addr.Set(cfg.Addr); err != nil {
@@ -70,7 +73,8 @@ func (cfg *Config) Get() error {
 		cfg.StoreInterval = *storeIntervalFlag
 	}
 
-	if !cfg.Restore {
+	_, ok := os.LookupEnv("RESTORE")
+	if !cfg.Restore && !ok {
 		cfg.Restore = *restoreFlag
 	}
 
