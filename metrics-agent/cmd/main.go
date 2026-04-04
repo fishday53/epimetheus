@@ -37,7 +37,7 @@ func main() {
 	ch1 := agent.GetMetricsRuntime(ctx, &cfg)
 	ch2 := agent.GetMetricsVMstat(ctx, &cfg)
 
-	rateLimit := ratelimit.NewTokenBucketLimiter(cfg.RateLimit, time.Second*1)
+	rateLimit := ratelimit.NewTokenBucketLimiter(ctx, cfg.RateLimit, time.Second*1)
 
 	wg.Add(1)
 	go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2), rateLimit)
