@@ -15,6 +15,7 @@ type Config struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	Restore         bool   `env:"RESTORE"`
 	DSN             string `env:"DATABASE_DSN"`
+	HashKey         string `env:"KEY"`
 }
 
 type netAddress struct {
@@ -53,6 +54,7 @@ func (cfg *Config) Get() error {
 	restoreFlag := flag.Bool("r", true, "Restore data from disk on start. Format bool, default true.")
 	fileStoragePathFlag := flag.String("f", "metrics.dmp", "File to store data. Format string, default metrics.dmp.")
 	dsnFlag := flag.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
+	hashKey := flag.String("k", "", "Hash Key")
 
 	flag.Parse()
 
@@ -78,6 +80,10 @@ func (cfg *Config) Get() error {
 
 	if cfg.DSN == "" {
 		cfg.DSN = *dsnFlag
+	}
+
+	if cfg.HashKey == "" {
+		cfg.HashKey = *hashKey
 	}
 
 	return nil

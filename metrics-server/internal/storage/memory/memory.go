@@ -7,6 +7,7 @@ import (
 	"log"
 	"metrics-server/internal/usecase"
 	"os"
+	"sync"
 )
 
 type MetricParam struct {
@@ -17,6 +18,7 @@ type MetricParam struct {
 
 type MemStorage struct {
 	Metrics map[string]MetricParam
+	Mutex   sync.RWMutex
 }
 
 func NewMemStorage() *MemStorage {
@@ -26,6 +28,8 @@ func NewMemStorage() *MemStorage {
 }
 
 func (m *MemStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
+	m.Mutex.Lock()
+	defer m.Mutex.Unlock()
 
 	result := usecase.Metric{
 		ID:    metric.ID,
@@ -76,6 +80,8 @@ func (m *MemStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 }
 
 func (m *MemStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
+	m.Mutex.RLock()
+	defer m.Mutex.RUnlock()
 
 	if _, ok := m.Metrics[metric.ID]; !ok {
 		return nil, fmt.Errorf("%s not found", metric.ID)
@@ -98,6 +104,9 @@ func (m *MemStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 }
 
 func (m *MemStorage) GetAll() (*[]usecase.Metric, error) {
+	m.Mutex.RLock()
+	defer m.Mutex.RUnlock()
+
 	result := []usecase.Metric{}
 	for k, v := range m.Metrics {
 		result = append(result, usecase.Metric{
@@ -111,6 +120,9 @@ func (m *MemStorage) GetAll() (*[]usecase.Metric, error) {
 }
 
 func (m *MemStorage) Dump(filepath string) error {
+	m.Mutex.RLock()
+	defer m.Mutex.RUnlock()
+
 	data, err := json.MarshalIndent(m.Metrics, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error in dump marshaller: %v", err)
@@ -121,6 +133,10 @@ func (m *MemStorage) Dump(filepath string) error {
 func (m *MemStorage) Restore(filepath string) error {
 	var data []byte
 	var err error
+
+	m.Mutex.Lock()
+	defer m.Mutex.Unlock()
+
 	data, err = os.ReadFile(filepath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {

@@ -4,13 +4,18 @@ import (
 	"log"
 	"metrics-agent/internal/agent"
 	"metrics-agent/internal/config"
+	"metrics-agent/internal/ratelimit"
 	"os"
+	"sync"
 	"time"
 )
 
 func main() {
 
-	var cfg config.Config
+	var (
+		wg  sync.WaitGroup
+		cfg config.Config
+	)
 
 	log.SetOutput(os.Stdout)
 
@@ -23,24 +28,17 @@ func main() {
 		proto = "http://"
 		path  = "/updates/"
 	)
+
 	url := proto + cfg.Addr + path
+	cfg.BufferSize = 100
 
-	for {
-		for i := 0; i < (cfg.ReportInterval / cfg.PollInterval); i++ {
+	ch1 := agent.GetMetricsRuntime(&cfg)
+	ch2 := agent.GetMetricsVMstat(&cfg)
 
-			m, err := agent.GetMetrics(&cfg)
-			if err != nil {
-				log.Printf("Cannot get metrics: %v\n", err)
-			}
+	rateLimit := ratelimit.NewTokenBucketLimiter(cfg.RateLimit, time.Second*1)
 
-			if len(*m) != 0 {
-				err = agent.SendMetrics(url, m)
-				if err != nil {
-					log.Printf("Metric send failed. Error:%v\n", err)
-				}
-			}
+	wg.Add(1)
+	go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2), rateLimit)
 
-			time.Sleep(time.Duration(cfg.PollInterval) * time.Second)
-		}
-	}
+	wg.Wait()
 }

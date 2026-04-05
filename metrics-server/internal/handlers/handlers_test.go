@@ -91,7 +91,7 @@ func Test_GetParam(t *testing.T) {
 		code   int
 		answer string
 	}
-	tests := []struct {
+	tests := []*struct {
 		name    string
 		storage memory.MemStorage
 		request string
@@ -180,7 +180,7 @@ func Test_getAllParams(t *testing.T) {
 		code   int
 		answer string
 	}
-	tests := []struct {
+	tests := []*struct {
 		name    string
 		storage memory.MemStorage
 		request string
@@ -316,7 +316,7 @@ func Test_GetParamJSON(t *testing.T) {
 		code   int
 		answer string
 	}
-	tests := []struct {
+	tests := []*struct {
 		name    string
 		storage memory.MemStorage
 		request usecase.Metric
@@ -423,7 +423,7 @@ func Test_getAllParamsJSON(t *testing.T) {
 		code   int
 		answer string
 	}
-	tests := []struct {
+	tests := []*struct {
 		name    string
 		storage memory.MemStorage
 		request string
