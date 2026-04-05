@@ -1,3 +1,4 @@
+// Package ratelimit is used to limit frequency for any operation.
 package ratelimit
 
 import (
@@ -5,10 +6,12 @@ import (
 	"time"
 )
 
+// TokenBucketLimiter is a channel interface for Token Bucket.
 type TokenBucketLimiter struct {
 	tockenBucketCh chan struct{}
 }
 
+// NewTokenBucketLimiter creates a new token bucket with "limit" capacity for "period" time period.
 func NewTokenBucketLimiter(ctx context.Context, limit int, period time.Duration) *TokenBucketLimiter {
 	limiter := &TokenBucketLimiter{
 		tockenBucketCh: make(chan struct{}, limit),
@@ -40,6 +43,7 @@ func (l *TokenBucketLimiter) startPeriodicRefill(ctx context.Context, interval t
 	}
 }
 
+// Allow is a method to check for free tokens in the Token Bucket.
 func (l *TokenBucketLimiter) Allow() bool {
 	select {
 	case <-l.tockenBucketCh:

@@ -19,7 +19,6 @@ type (
 		DSN             string `env:"DATABASE_DSN"`
 		HashKey         string `env:"KEY"`
 	}
-
 	netAddress struct {
 		Host string
 		Port int

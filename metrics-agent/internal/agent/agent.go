@@ -1,3 +1,4 @@
+// Package agent is used to gather all kinds of metrics and send them via http.
 package agent
 
 import (
@@ -30,6 +31,7 @@ var (
 	}
 )
 
+// SendMetrics sends a signed batch of metrics via http.
 func SendMetrics(url, hashKey string, metric *metrics.Batch) error {
 	var hashHeader string
 
@@ -86,6 +88,7 @@ func getHash(hashKey string, b []byte) string {
 	return hex.EncodeToString(hashBytes[:])
 }
 
+// GetMetricsRuntime gathers runtime metrics.
 func GetMetricsRuntime(ctx context.Context, cfg *config.Config) chan *metrics.Batch {
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
 	ticker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
@@ -148,6 +151,7 @@ func GetMetricsRuntime(ctx context.Context, cfg *config.Config) chan *metrics.Ba
 	return outChan
 }
 
+// GetMetricsRuntime gathers VMstat metrics.
 func GetMetricsVMstat(ctx context.Context, cfg *config.Config) chan *metrics.Batch {
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
 	ticker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)
@@ -205,6 +209,7 @@ func GetMetricsVMstat(ctx context.Context, cfg *config.Config) chan *metrics.Bat
 	return outChan
 }
 
+// FanIn joins and publishes all metrics kinds in a single queue to process.
 func FanIn(chs ...chan *metrics.Batch) chan *metrics.Batch {
 	finalCh := make(chan *metrics.Batch)
 
@@ -231,6 +236,7 @@ func FanIn(chs ...chan *metrics.Batch) chan *metrics.Batch {
 	return finalCh
 }
 
+// SendWorker is used to process the metrics queue.
 func SendWorker(
 	wg *sync.WaitGroup,
 	cfg *config.Config,

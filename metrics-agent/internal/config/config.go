@@ -1,3 +1,4 @@
+// Package config is used to get command-line and Env Metrics-Agent settings.
 package config
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// Config is a Metrics-Agent configuration storage.
 type Config struct {
 	Addr           string `env:"ADDRESS"`
 	ReportInterval int    `env:"REPORT_INTERVAL"`
@@ -17,6 +19,7 @@ type Config struct {
 	BufferSize     int
 }
 
+// Get is a single method to get all Metrics-Agent settings.
 func (cfg *Config) Get() error {
 	err := env.Parse(cfg)
 	if err != nil {
