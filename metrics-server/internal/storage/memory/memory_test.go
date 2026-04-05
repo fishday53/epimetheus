@@ -180,3 +180,28 @@ func Test_GetAll(t *testing.T) {
 		})
 	}
 }
+
+func Benchmark_Set(b *testing.B) {
+
+	mdb := NewMemStorage()
+	metric := usecase.Metric{ID: "g1", MType: "gauge", Value: &testGauge}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		mdb.Set(&metric)
+	}
+}
+
+func Benchmark_Get(b *testing.B) {
+
+	mdb := NewMemStorage()
+	metric := usecase.Metric{ID: "g1", MType: "gauge", Value: &testGauge}
+	mdb.Set(&metric)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		mdb.Get(&metric)
+	}
+}
