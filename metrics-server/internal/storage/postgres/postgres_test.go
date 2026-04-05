@@ -234,8 +234,8 @@ func Test_GetAll(t *testing.T) {
 	}
 
 	var (
-		zeroCounter int64   = 0
-		zeroGauge   float64 = 0.0
+		zeroCounter int64
+		zeroGauge   float64
 	)
 
 	c1 := usecase.Metric{ID: "c1", MType: "counter", Delta: &testCounter, Value: &zeroGauge}
