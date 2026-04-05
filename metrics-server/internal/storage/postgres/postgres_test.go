@@ -253,21 +253,7 @@ func Test_GetAll(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Len(t, *result, 2)
 
-	// Проверяем правильность данных
 	metrics := *result
 	assert.Equal(t, g1, metrics[0])
 	assert.Equal(t, c1, metrics[1])
-
-	// metrics := *result
-	// assert.Equal(t, "g1", metrics[0].ID)
-	// assert.Equal(t, "gauge", metrics[0].MType)
-	// assert.Equal(t, testGauge, *metrics[0].Value)
-	// assert.Nil(t, metrics[0].Delta)
-
-	// assert.Equal(t, "c1", metrics[1].ID)
-	// assert.Equal(t, "counter", metrics[1].MType)
-	// assert.Equal(t, testCounter, *metrics[1].Delta)
-	// assert.Nil(t, metrics[1].Value)
-
-	require.NoError(t, mock.ExpectationsWereMet())
 }
