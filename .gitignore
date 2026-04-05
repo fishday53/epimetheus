@@ -32,3 +32,5 @@ go.work.sum
 .vscode
 
 example.md
+
+metrics.dmp
