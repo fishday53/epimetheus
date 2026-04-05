@@ -100,3 +100,31 @@ func Test_GetMetricsVMstat(t *testing.T) {
 		})
 	}
 }
+
+func Benchmark_GetMetricsRuntime(b *testing.B) {
+	cfg := config.Config{BufferSize: 1, PollInterval: 1}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ch := GetMetricsRuntime(ctx, &cfg)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		<-ch
+	}
+	cancel()
+}
+
+func Benchmark_GetMetricsVMstat(b *testing.B) {
+	cfg := config.Config{BufferSize: 1, PollInterval: 1}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ch := GetMetricsVMstat(ctx, &cfg)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		<-ch
+	}
+	cancel()
+}
