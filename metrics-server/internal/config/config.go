@@ -10,19 +10,21 @@ import (
 	"github.com/caarlos0/env"
 )
 
-type Config struct {
-	Addr            string `env:"ADDRESS"`
-	StoreInterval   int    `env:"STORE_INTERVAL"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH"`
-	Restore         bool   `env:"RESTORE"`
-	DSN             string `env:"DATABASE_DSN"`
-	HashKey         string `env:"KEY"`
-}
+type (
+	Config struct {
+		Addr            string `env:"ADDRESS"`
+		StoreInterval   int    `env:"STORE_INTERVAL"`
+		FileStoragePath string `env:"FILE_STORAGE_PATH"`
+		Restore         bool   `env:"RESTORE"`
+		DSN             string `env:"DATABASE_DSN"`
+		HashKey         string `env:"KEY"`
+	}
 
-type netAddress struct {
-	Host string
-	Port int
-}
+	netAddress struct {
+		Host string
+		Port int
+	}
+)
 
 func (n *netAddress) String() string {
 	return fmt.Sprint(n.Host, ":", n.Port)

@@ -20,13 +20,15 @@ import (
 	"time"
 )
 
-var tick int64 = 1
+var (
+	tick int64 = 1
 
-var backoffSchedule = []time.Duration{
-	1 * time.Second,
-	3 * time.Second,
-	5 * time.Second,
-}
+	backoffSchedule = []time.Duration{
+		1 * time.Second,
+		3 * time.Second,
+		5 * time.Second,
+	}
+)
 
 func SendMetrics(url, hashKey string, metric *metrics.Batch) error {
 	var hashHeader string
@@ -229,7 +231,13 @@ func FanIn(chs ...chan *metrics.Batch) chan *metrics.Batch {
 	return finalCh
 }
 
-func SendWorker(wg *sync.WaitGroup, cfg *config.Config, url string, jobs <-chan *metrics.Batch, limit *ratelimit.TokenBucketLimiter) {
+func SendWorker(
+	wg *sync.WaitGroup,
+	cfg *config.Config,
+	url string,
+	jobs <-chan *metrics.Batch,
+	limit *ratelimit.TokenBucketLimiter,
+) {
 	ticker := time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second)
 	defer ticker.Stop()
 
