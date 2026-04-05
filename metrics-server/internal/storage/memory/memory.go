@@ -1,3 +1,4 @@
+// Package memory implements in-memory metrics storage.
 package memory
 
 import (
@@ -11,23 +12,27 @@ import (
 )
 
 type (
+	// MetricParam is a singke metric storage.
 	MetricParam struct {
 		MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
 		Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
 		Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 	}
+	// MemStorage is an in-memory metrics storage.
 	MemStorage struct {
 		Metrics map[string]MetricParam
 		Mutex   sync.RWMutex
 	}
 )
 
+// NewMemStorage creates an empty in-memory metrics storage.
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
 		Metrics: make(map[string]MetricParam),
 	}
 }
 
+// Set stores a single metric.
 func (m *MemStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 	m.Mutex.Lock()
 	defer m.Mutex.Unlock()
@@ -80,6 +85,7 @@ func (m *MemStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 	return &result, nil
 }
 
+// Get withdraws a single stored metric from storage.
 func (m *MemStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 	m.Mutex.RLock()
 	defer m.Mutex.RUnlock()
@@ -104,6 +110,7 @@ func (m *MemStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 	return metric, nil
 }
 
+// GetAll withdraws all stored metrics from storage.
 func (m *MemStorage) GetAll() (*[]usecase.Metric, error) {
 	m.Mutex.RLock()
 	defer m.Mutex.RUnlock()
@@ -120,6 +127,7 @@ func (m *MemStorage) GetAll() (*[]usecase.Metric, error) {
 	return &result, nil
 }
 
+// Dump writes all stored metrics to a file in json format.
 func (m *MemStorage) Dump(filepath string) error {
 	m.Mutex.RLock()
 	defer m.Mutex.RUnlock()
@@ -131,6 +139,7 @@ func (m *MemStorage) Dump(filepath string) error {
 	return os.WriteFile(filepath, data, 0666)
 }
 
+// Restore restores dumped metrics to the in-memory storage.
 func (m *MemStorage) Restore(filepath string) error {
 	var data []byte
 	var err error
@@ -152,6 +161,7 @@ func (m *MemStorage) Restore(filepath string) error {
 	return nil
 }
 
+// Ping is a stub to implement IRepository interface.
 func (m *MemStorage) Ping() error {
 	return nil
 }

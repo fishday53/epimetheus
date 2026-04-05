@@ -1,3 +1,4 @@
+// Package postgres implements PostgreSQL metrics storage.
 package postgres
 
 import (
@@ -13,6 +14,7 @@ import (
 
 const table = "metrics"
 
+// PsqlStorage is the PostgreSQL storage.
 type PsqlStorage struct {
 	DB              *sql.DB
 	BackOffSchedule *[]time.Duration
@@ -24,6 +26,7 @@ var backoffSchedule = []time.Duration{
 	5 * time.Second,
 }
 
+// NewPsqlStorage creates new PostgreSQL storage.
 func NewPsqlStorage(dsn string) (*PsqlStorage, error) {
 	p := PsqlStorage{BackOffSchedule: &backoffSchedule}
 	var err error
@@ -40,6 +43,7 @@ func NewPsqlStorage(dsn string) (*PsqlStorage, error) {
 	return &p, nil
 }
 
+// Migrate runs migrations on storage.
 func (p *PsqlStorage) Migrate() error {
 	var err error
 	query := fmt.Sprintf(`
@@ -60,6 +64,7 @@ func (p *PsqlStorage) Migrate() error {
 	return fmt.Errorf("cannot create table %s: %v", query, err)
 }
 
+// Set stores a single metric.
 func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 	var err error
 
@@ -118,6 +123,7 @@ func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
 	}
 }
 
+// Get withdraws a single stored metric from storage.
 func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 	var err error
 	var delta int64
@@ -162,6 +168,7 @@ func (p *PsqlStorage) Get(metric *usecase.Metric) (*usecase.Metric, error) {
 	}
 }
 
+// GetAll withdraws all stored metrics from storage.
 func (p *PsqlStorage) GetAll() (*[]usecase.Metric, error) {
 	var err error
 	var rows *sql.Rows
@@ -193,16 +200,19 @@ func (p *PsqlStorage) GetAll() (*[]usecase.Metric, error) {
 	return &result, nil
 }
 
+// Dump is a stub to implement IRepository interface.
 func (p *PsqlStorage) Dump(filepath string) error {
 	// not implemented
 	return nil
 }
 
+// Restore is a stub to implement IRepository interface.
 func (p *PsqlStorage) Restore(filepath string) error {
 	// not implemented
 	return nil
 }
 
+// Ping checks PostgreSQL connection.
 func (p *PsqlStorage) Ping() error {
 	var err error
 	for _, backoff := range *p.BackOffSchedule {

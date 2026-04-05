@@ -1,3 +1,4 @@
+// Package context implements transparent set of Metrics-Server settings for server-wide usage.
 package context
 
 import (
@@ -11,12 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// AppContext stores server-wide settings.
 type AppContext struct {
 	DB  usecase.IRepository
 	Log *zap.SugaredLogger
 	Cfg *config.Config
 }
 
+// NewAppContext initializes a new AppContext.
 func NewAppContext(cfg *config.Config) (*AppContext, error) {
 	var err error
 	a := AppContext{

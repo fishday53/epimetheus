@@ -1,3 +1,4 @@
+// Package handlers is used to implement all http-server handlers.
 package handlers
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// SetParam stores metric in the plain-text format.
 func SetParam(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metric usecase.Metric
@@ -68,6 +70,7 @@ func SetParam(app *context.AppContext) http.HandlerFunc {
 	}
 }
 
+// GetParam sends stored metric in the plain-text format.
 func GetParam(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metric usecase.Metric
@@ -107,6 +110,7 @@ func GetParam(app *context.AppContext) http.HandlerFunc {
 	}
 }
 
+// GetAllParams sends all stored metrics in the plain-text format.
 func GetAllParams(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var resultString string
@@ -136,6 +140,7 @@ func GetAllParams(app *context.AppContext) http.HandlerFunc {
 	}
 }
 
+// SetParamJSON stores metric in the json format.
 func SetParamJSON(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metric usecase.Metric
@@ -182,6 +187,7 @@ func SetParamJSON(app *context.AppContext) http.HandlerFunc {
 	}
 }
 
+// SetMultiParamJSON stores a batch of metrics in the json format.
 func SetMultiParamJSON(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metrics []usecase.Metric
@@ -226,6 +232,7 @@ func SetMultiParamJSON(app *context.AppContext) http.HandlerFunc {
 	}
 }
 
+// GetParamJSON sends stored metric in the json format.
 func GetParamJSON(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var metric usecase.Metric
@@ -264,6 +271,7 @@ func GetParamJSON(app *context.AppContext) http.HandlerFunc {
 	}
 }
 
+// GetAllParamsJSON sends all stored metrics in the json format.
 func GetAllParamsJSON(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		result, err := app.DB.GetAll()
@@ -288,6 +296,7 @@ func GetAllParamsJSON(app *context.AppContext) http.HandlerFunc {
 	}
 }
 
+// CheckDBConnect is used for DB connection probe.
 func CheckDBConnect(app *context.AppContext) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 

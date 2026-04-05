@@ -1,3 +1,4 @@
+// Package log is used to implement routes for http-server.
 package router
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// NewMultiplexer creates a new multiplexor to route http-requests.
 func NewMultiplexer(app *context.AppContext) *chi.Mux {
 
 	r := chi.NewRouter()

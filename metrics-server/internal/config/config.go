@@ -1,3 +1,4 @@
+// Package config is used to get command-line and Env Metrics-Server settings.
 package config
 
 import (
@@ -11,6 +12,7 @@ import (
 )
 
 type (
+	// Config is a Metrics-Server configuration storage.
 	Config struct {
 		Addr            string `env:"ADDRESS"`
 		StoreInterval   int    `env:"STORE_INTERVAL"`
@@ -25,10 +27,12 @@ type (
 	}
 )
 
+// String converts netAddress to string to implement flag.Value interface.
 func (n *netAddress) String() string {
 	return fmt.Sprint(n.Host, ":", n.Port)
 }
 
+// Set cpnverts string to netAddress to implement flag.Value interface.
 func (n *netAddress) Set(flagValue string) error {
 	var err error
 	params := strings.Split(flagValue, ":")
@@ -43,6 +47,7 @@ func (n *netAddress) Set(flagValue string) error {
 	return nil
 }
 
+// Get is a single method to get all Metrics-Server settings.
 func (cfg *Config) Get() error {
 	addr := netAddress{Host: "localhost", Port: 8080}
 

@@ -1,3 +1,4 @@
+// This package handlers part is used to implement http-server middleware.
 package handlers
 
 import (
@@ -35,26 +36,31 @@ type (
 	}
 )
 
+// Write is used to log responce size.
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
 	return size, err
 }
 
+// WriteHeader is used to log responce status code.
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.status = statusCode
 }
 
+// Write is used to compress the responce.
 func (w gzipWriter) Write(b []byte) (int, error) {
 	// w.Writer будет отвечать за gzip-сжатие, поэтому пишем в него
 	return w.Writer.Write(b)
 }
 
+// Write is used to calculate a hash.
 func (w *hashWriter) Write(b []byte) (int, error) {
 	return w.Body.Write(b)
 }
 
+// WriteHeader is used to write a hash header.
 func (w *hashWriter) WriteHeader(statusCode int) {
 	w.Status = statusCode
 }
@@ -66,6 +72,7 @@ func getHash(hashKey string, b []byte) string {
 	return hex.EncodeToString(hashBytes[:])
 }
 
+// Logger is responcible for Metrics-Server log.
 func Logger(app *context.AppContext) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +103,7 @@ func Logger(app *context.AppContext) func(next http.Handler) http.Handler {
 	}
 }
 
+// CheckContentType is used to check Content-Type headres for json-serving handlers.
 func CheckContentType(app *context.AppContext) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -111,6 +119,7 @@ func CheckContentType(app *context.AppContext) func(next http.Handler) http.Hand
 	}
 }
 
+// GzipHandler compresses responces.
 func GzipHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -145,6 +154,7 @@ func GzipHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 	}
 }
 
+// HashHandler is used to sign responces with hash header using HashKey secret.
 func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
