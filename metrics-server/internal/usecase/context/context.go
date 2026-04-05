@@ -12,7 +12,7 @@ import (
 )
 
 type AppContext struct {
-	DB  usecase.Repositories
+	DB  usecase.IRepository
 	Log *zap.SugaredLogger
 	Cfg *config.Config
 }
