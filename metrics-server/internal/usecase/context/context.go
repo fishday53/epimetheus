@@ -14,7 +14,7 @@ import (
 
 // AppContext stores server-wide settings.
 type AppContext struct {
-	DB  usecase.IRepository
+	DB  usecase.Repository
 	Log *zap.SugaredLogger
 	Cfg *config.Config
 }

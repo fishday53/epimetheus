@@ -11,7 +11,7 @@ type (
 	}
 
 	// IRepository is an universal inreface for different metric storages.
-	IRepository interface {
+	Repository interface {
 		Set(metric *Metric) (*Metric, error)
 		Get(metric *Metric) (*Metric, error)
 		GetAll() (*[]Metric, error)

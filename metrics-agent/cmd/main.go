@@ -34,6 +34,8 @@ func main() {
 	cfg.BufferSize = 100
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	ch1 := agent.GetMetricsRuntime(ctx, &cfg)
 	ch2 := agent.GetMetricsVMstat(ctx, &cfg)
 
@@ -43,5 +45,4 @@ func main() {
 	go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2), rateLimit)
 
 	wg.Wait()
-	cancel()
 }
