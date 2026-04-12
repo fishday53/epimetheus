@@ -66,7 +66,6 @@ func (p *PsqlStorage) Migrate() error {
 
 // Set stores a single metric.
 func (p *PsqlStorage) Set(metric *usecase.Metric) (*usecase.Metric, error) {
-	var err error
 
 	result, err := p.Get(metric)
 	if err != nil {
