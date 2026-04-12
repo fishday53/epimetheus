@@ -30,7 +30,7 @@ func Test_Set(t *testing.T) {
 		{
 			name:    "Set gauge",
 			metric:  usecase.Metric{ID: "g1", MType: "gauge", Value: &testGauge},
-			result:  usecase.Metric{ID: "g1", MType: "gauge", Value: &testGauge},
+			result:  usecase.Metric{ID: "g1", MType: "gauge", Value: &resultGauge},
 			wantErr: false,
 		},
 		{

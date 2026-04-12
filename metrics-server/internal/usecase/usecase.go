@@ -10,7 +10,7 @@ type (
 		Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 	}
 
-	// IRepository is an universal inreface for different metric storages.
+	// Repository is an universal inreface for different metric storages.
 	Repository interface {
 		Set(metric *Metric) (*Metric, error)
 		Get(metric *Metric) (*Metric, error)
