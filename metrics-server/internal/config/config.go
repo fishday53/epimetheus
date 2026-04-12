@@ -1,32 +1,38 @@
+// Package config is used to get command-line and Env Metrics-Server settings.
 package config
 
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/caarlos0/env"
 )
 
-type Config struct {
-	Addr            string `env:"ADDRESS"`
-	StoreInterval   int    `env:"STORE_INTERVAL"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH"`
-	Restore         bool   `env:"RESTORE"`
-	DSN             string `env:"DATABASE_DSN"`
-	HashKey         string `env:"KEY"`
-}
+type (
+	// Config is a Metrics-Server configuration storage.
+	Config struct {
+		Addr            string `env:"ADDRESS"`
+		StoreInterval   int    `env:"STORE_INTERVAL"`
+		FileStoragePath string `env:"FILE_STORAGE_PATH"`
+		Restore         bool   `env:"RESTORE"`
+		DSN             string `env:"DATABASE_DSN"`
+		HashKey         string `env:"KEY"`
+	}
+	netAddress struct {
+		Host string
+		Port int
+	}
+)
 
-type netAddress struct {
-	Host string
-	Port int
-}
-
+// String converts netAddress to string to implement flag.Value interface.
 func (n *netAddress) String() string {
 	return fmt.Sprint(n.Host, ":", n.Port)
 }
 
+// Set cpnverts string to netAddress to implement flag.Value interface.
 func (n *netAddress) Set(flagValue string) error {
 	var err error
 	params := strings.Split(flagValue, ":")
@@ -41,6 +47,7 @@ func (n *netAddress) Set(flagValue string) error {
 	return nil
 }
 
+// Get is a single method to get all Metrics-Server settings.
 func (cfg *Config) Get() error {
 	addr := netAddress{Host: "localhost", Port: 8080}
 
@@ -49,14 +56,16 @@ func (cfg *Config) Get() error {
 		return fmt.Errorf("cannot parse env: %v", err)
 	}
 
-	flag.Var(&addr, "a", "Listen address. Format host:port, default localhost:8080")
-	storeIntervalFlag := flag.Int("i", 300, "Store interval. Format int, default 300.")
-	restoreFlag := flag.Bool("r", true, "Restore data from disk on start. Format bool, default true.")
-	fileStoragePathFlag := flag.String("f", "metrics.dmp", "File to store data. Format string, default metrics.dmp.")
-	dsnFlag := flag.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
-	hashKey := flag.String("k", "", "Hash Key")
+	fs := flag.NewFlagSet("metrics-server", flag.ContinueOnError)
 
-	flag.Parse()
+	fs.Var(&addr, "a", "Listen address. Format host:port, default localhost:8080")
+	storeIntervalFlag := fs.Int("i", 300, "Store interval. Format int, default 300.")
+	restoreFlag := fs.Bool("r", true, "Restore data from disk on start. Format bool, default true.")
+	fileStoragePathFlag := fs.String("f", "metrics.dmp", "File to store data. Format string, default metrics.dmp.")
+	dsnFlag := fs.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
+	hashKey := fs.String("k", "", "Hash Key")
+
+	fs.Parse(os.Args[1:])
 
 	if cfg.Addr != "" {
 		if err = addr.Set(cfg.Addr); err != nil {
@@ -70,7 +79,8 @@ func (cfg *Config) Get() error {
 		cfg.StoreInterval = *storeIntervalFlag
 	}
 
-	if !cfg.Restore {
+	_, ok := os.LookupEnv("RESTORE")
+	if !cfg.Restore && !ok {
 		cfg.Restore = *restoreFlag
 	}
 

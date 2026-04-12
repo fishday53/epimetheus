@@ -3,6 +3,8 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"metrics-server/internal/config"
+	"metrics-server/internal/log"
 	"metrics-server/internal/storage"
 	"metrics-server/internal/storage/memory"
 	"metrics-server/internal/usecase"
@@ -13,7 +15,6 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -67,7 +68,13 @@ func Test_SetParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &context.AppContext{DB: memory.NewMemStorage()}
+			app := &context.AppContext{
+				DB:  memory.NewMemStorage(),
+				Log: log.NewLogger(),
+				Cfg: &config.Config{
+					StoreInterval: 300,
+				},
+			}
 			r := chi.NewRouter()
 			r.Post(`/update/{mtype}/{name}/{value}`, SetParam(app))
 
@@ -175,7 +182,7 @@ func Test_GetParam(t *testing.T) {
 	}
 }
 
-func Test_getAllParams(t *testing.T) {
+func Test_GetAllParams(t *testing.T) {
 	type want struct {
 		code   int
 		answer string
@@ -289,7 +296,13 @@ func Test_SetParamJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &context.AppContext{DB: memory.NewMemStorage()}
+			app := &context.AppContext{
+				DB:  memory.NewMemStorage(),
+				Log: log.NewLogger(),
+				Cfg: &config.Config{
+					StoreInterval: 300,
+				},
+			}
 			r := chi.NewRouter()
 			r.Post(`/update/`, SetParamJSON(app))
 
@@ -297,6 +310,64 @@ func Test_SetParamJSON(t *testing.T) {
 			reader := bytes.NewReader(jsonData)
 
 			request := httptest.NewRequest(http.MethodPost, "/update/", reader)
+			w := httptest.NewRecorder()
+
+			r.ServeHTTP(w, request)
+
+			res := w.Result()
+
+			defer request.Body.Close()
+			defer res.Body.Close()
+
+			assert.Equal(t, tt.want.code, res.StatusCode)
+		})
+	}
+}
+
+func Test_SetMultiParamJSON(t *testing.T) {
+	type want struct {
+		code int
+	}
+	tests := []struct {
+		name    string
+		metrics []*usecase.Metric
+		want    want
+	}{
+		{
+			name: "counter",
+			metrics: []*usecase.Metric{
+				{
+					ID:    "c1",
+					MType: "counter",
+					Delta: &testCounter,
+				},
+				{
+					ID:    "g1",
+					MType: "gauge",
+					Value: &testGauge,
+				},
+			},
+			want: want{
+				code: 200,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := &context.AppContext{
+				DB:  memory.NewMemStorage(),
+				Log: log.NewLogger(),
+				Cfg: &config.Config{
+					StoreInterval: 300,
+				},
+			}
+			r := chi.NewRouter()
+			r.Post(`/updates/`, SetMultiParamJSON(app))
+
+			jsonData, _ := json.Marshal(tt.metrics)
+			reader := bytes.NewReader(jsonData)
+
+			request := httptest.NewRequest(http.MethodPost, "/updates/", reader)
 			w := httptest.NewRecorder()
 
 			r.ServeHTTP(w, request)
@@ -395,7 +466,13 @@ func Test_GetParamJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := &context.AppContext{DB: &tt.storage}
+			app := &context.AppContext{
+				DB:  &tt.storage,
+				Log: log.NewLogger(),
+				Cfg: &config.Config{
+					StoreInterval: 300,
+				},
+			}
 			r := chi.NewRouter()
 			r.Post(`/value/`, GetParamJSON(app))
 
@@ -418,7 +495,7 @@ func Test_GetParamJSON(t *testing.T) {
 	}
 }
 
-func Test_getAllParamsJSON(t *testing.T) {
+func Test_GetAllParamsJSON(t *testing.T) {
 	type want struct {
 		code   int
 		answer string
@@ -461,12 +538,7 @@ func Test_getAllParamsJSON(t *testing.T) {
 			defer res.Body.Close()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
-
-			var data1, data2 interface{}
-			json.Unmarshal([]byte(tt.want.answer), &data1)
-			json.Unmarshal(w.Body.Bytes(), &data2)
-			diff := cmp.Diff(data1, data2)
-			assert.Equal(t, diff, "")
+			assert.JSONEq(t, tt.want.answer, w.Body.String())
 		})
 	}
 }

@@ -1,3 +1,4 @@
+// Package metrics is used to get different type of metrics.
 package metrics
 
 import (
@@ -11,14 +12,18 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
-type Metric struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
+type (
+	// Metric is the main Metric store structure.
+	Metric struct {
+		ID    string   `json:"id"`              // имя метрики
+		MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+		Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+		Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	}
 
-type Batch []*Metric
+	// Batch is a batch of Metrics to send.
+	Batch []*Metric
+)
 
 var (
 	MetricList = []string{
@@ -57,6 +62,7 @@ var (
 	}
 )
 
+// GetRuntimeMetric returns runtime.MemStats metric value by metric name.
 func GetRuntimeMetric(name string) (float64, error) {
 	var r runtime.MemStats
 	runtime.ReadMemStats(&r)
@@ -79,6 +85,7 @@ func GetRuntimeMetric(name string) (float64, error) {
 	}
 }
 
+// GetRuntimeMetric returns mem.VirtualMemory metric value by metric name.
 func GetVMStatMetric(name string) (float64, error) {
 
 	vmStat, err := mem.VirtualMemory()
@@ -104,6 +111,7 @@ func GetVMStatMetric(name string) (float64, error) {
 	}
 }
 
+// GetRuntimeMetric returns cpu.Percent value.
 func GetCPUTotal() (float64, error) {
 	percent, err := cpu.Percent(time.Second, false)
 	if err != nil {

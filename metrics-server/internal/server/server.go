@@ -1,3 +1,4 @@
+// Package server implements an http-server.
 package server
 
 import (
@@ -6,6 +7,7 @@ import (
 	"net/http"
 )
 
+// HTTPServer starts to serve http-requests.
 func HTTPServer(app *context.AppContext) {
 	err := http.ListenAndServe(app.Cfg.Addr, router.NewMultiplexer(app))
 	if err != nil {

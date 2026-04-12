@@ -1,12 +1,15 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 	"math/rand/v2"
+	"metrics-agent/internal/config"
 	"metrics-agent/internal/metrics"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func Test_SendMetric(t *testing.T) {
@@ -46,4 +49,82 @@ func Test_SendMetric(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_GetMetricsRuntime(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{
+			name: "Check GetMetricsRuntime",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := config.Config{BufferSize: 1, PollInterval: 1}
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ch1 := GetMetricsRuntime(ctx, &cfg)
+
+			batch := <-ch1
+			for _, b := range *batch {
+				if b.Delta == nil && b.Value == nil {
+					t.Errorf("Can't get %s metric", b.ID)
+				}
+			}
+			cancel()
+		})
+	}
+}
+
+func Test_GetMetricsVMstat(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{
+			name: "Check GetMetricsVMstat",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := config.Config{BufferSize: 1, PollInterval: 1}
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ch2 := GetMetricsVMstat(ctx, &cfg)
+
+			batch := <-ch2
+			for _, b := range *batch {
+				if b.Delta == nil && b.Value == nil {
+					t.Errorf("Can't get %s metric", b.ID)
+				}
+			}
+			cancel()
+		})
+	}
+}
+
+func Benchmark_GetMetricsRuntime(b *testing.B) {
+	cfg := config.Config{BufferSize: 1, PollInterval: 1}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ch := GetMetricsRuntime(ctx, &cfg)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		<-ch
+	}
+	cancel()
+}
+
+func Benchmark_GetMetricsVMstat(b *testing.B) {
+	cfg := config.Config{BufferSize: 1, PollInterval: 1}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ch := GetMetricsVMstat(ctx, &cfg)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		<-ch
+	}
+	cancel()
 }

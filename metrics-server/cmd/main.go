@@ -11,8 +11,10 @@ import (
 
 func main() {
 
-	var err error
-	var cfg config.Config
+	var (
+		err error
+		cfg config.Config
+	)
 
 	log.SetOutput(os.Stdout)
 

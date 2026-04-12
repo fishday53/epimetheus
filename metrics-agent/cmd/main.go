@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"metrics-agent/internal/agent"
 	"metrics-agent/internal/config"
@@ -32,10 +33,13 @@ func main() {
 	url := proto + cfg.Addr + path
 	cfg.BufferSize = 100
 
-	ch1 := agent.GetMetricsRuntime(&cfg)
-	ch2 := agent.GetMetricsVMstat(&cfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	rateLimit := ratelimit.NewTokenBucketLimiter(cfg.RateLimit, time.Second*1)
+	ch1 := agent.GetMetricsRuntime(ctx, &cfg)
+	ch2 := agent.GetMetricsVMstat(ctx, &cfg)
+
+	rateLimit := ratelimit.NewTokenBucketLimiter(ctx, cfg.RateLimit, time.Second*1)
 
 	wg.Add(1)
 	go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2), rateLimit)
