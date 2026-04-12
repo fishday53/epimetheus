@@ -3,6 +3,7 @@ package ratelimit
 
 import (
 	"context"
+	"log"
 	"time"
 )
 
@@ -33,6 +34,7 @@ func (l *TokenBucketLimiter) startPeriodicRefill(ctx context.Context, interval t
 	for {
 		select {
 		case <-ctx.Done():
+			log.Println("Ratelimiter bucket refiller was interrupted by context")
 			return
 		case <-timer.C:
 			select {
