@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"metrics-server/internal/config"
 	"metrics-server/internal/server"
@@ -9,7 +10,18 @@ import (
 	"os"
 )
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
 func main() {
+
+	fmt.Printf(
+		"Build version: %s\nBuild date: %s\nBuild commit: %s\n",
+		printVal(buildVersion), printVal(buildDate), printVal(buildCommit),
+	)
 
 	var (
 		err error
@@ -43,4 +55,11 @@ func main() {
 	}
 
 	server.HTTPServer(app)
+}
+
+func printVal(v string) string {
+	if v == "" {
+		return "N/A"
+	}
+	return v
 }

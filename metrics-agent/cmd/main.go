@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"metrics-agent/internal/agent"
 	"metrics-agent/internal/config"
@@ -11,7 +12,18 @@ import (
 	"time"
 )
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
 func main() {
+
+	fmt.Printf(
+		"Build version: %s\nBuild date: %s\nBuild commit: %s\n",
+		printVal(buildVersion), printVal(buildDate), printVal(buildCommit),
+	)
 
 	var (
 		wg  sync.WaitGroup
@@ -45,4 +57,11 @@ func main() {
 	go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2), rateLimit)
 
 	wg.Wait()
+}
+
+func printVal(v string) string {
+	if v == "" {
+		return "N/A"
+	}
+	return v
 }
