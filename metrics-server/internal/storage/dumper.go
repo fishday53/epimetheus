@@ -1,4 +1,4 @@
-// This part of storage package implements periodic dump for metric storage.
+// Package storage part implements periodic dump for metric storage.
 package storage
 
 import (

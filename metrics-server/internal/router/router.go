@@ -1,4 +1,4 @@
-// Package log is used to implement routes for http-server.
+// Package router is used to implement routes for http-server.
 package router
 
 import (

@@ -1,4 +1,4 @@
-// This package handlers part is used to implement http-server middleware.
+// Package handlers part is used to implement http-server middleware.
 package handlers
 
 import (

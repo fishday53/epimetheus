@@ -85,7 +85,7 @@ func GetRuntimeMetric(name string) (float64, error) {
 	}
 }
 
-// GetRuntimeMetric returns mem.VirtualMemory metric value by metric name.
+// GetVMStatMetric returns mem.VirtualMemory metric value by metric name.
 func GetVMStatMetric(name string) (float64, error) {
 
 	vmStat, err := mem.VirtualMemory()
@@ -111,7 +111,7 @@ func GetVMStatMetric(name string) (float64, error) {
 	}
 }
 
-// GetRuntimeMetric returns cpu.Percent value.
+// GetCPUTotal returns cpu.Percent value.
 func GetCPUTotal() (float64, error) {
 	percent, err := cpu.Percent(time.Second, false)
 	if err != nil {

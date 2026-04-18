@@ -151,7 +151,7 @@ func GetMetricsRuntime(ctx context.Context, cfg *config.Config) chan *metrics.Ba
 	return outChan
 }
 
-// GetMetricsRuntime gathers VMstat metrics.
+// GetMetricsVMstat gathers VMstat metrics.
 func GetMetricsVMstat(ctx context.Context, cfg *config.Config) chan *metrics.Batch {
 	outChan := make(chan *metrics.Batch, cfg.BufferSize)
 	ticker := time.NewTicker(time.Duration(cfg.PollInterval) * time.Second)

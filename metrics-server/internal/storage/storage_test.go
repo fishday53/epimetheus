@@ -3,9 +3,6 @@ package storage
 import "testing"
 
 func Test_GaugeToString(t *testing.T) {
-	type want struct {
-		code int
-	}
 	tests := []struct {
 		name   string
 		param  float64
@@ -28,9 +25,6 @@ func Test_GaugeToString(t *testing.T) {
 }
 
 func Test_CounterToString(t *testing.T) {
-	type want struct {
-		code int
-	}
 	tests := []struct {
 		name   string
 		param  int64
@@ -53,9 +47,6 @@ func Test_CounterToString(t *testing.T) {
 }
 
 func Test_StringToGauge(t *testing.T) {
-	type want struct {
-		code int
-	}
 	tests := []struct {
 		name   string
 		param  string
@@ -78,9 +69,6 @@ func Test_StringToGauge(t *testing.T) {
 }
 
 func Test_StringToCounter(t *testing.T) {
-	type want struct {
-		code int
-	}
 	tests := []struct {
 		name   string
 		param  string

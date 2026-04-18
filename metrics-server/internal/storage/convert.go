@@ -1,4 +1,4 @@
-// This part of storage package implements different metric kinds conversion to/from string.
+// Package storage part implements different metric kinds conversion to/from string.
 package storage
 
 import "strconv"
