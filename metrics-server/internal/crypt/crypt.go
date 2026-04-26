@@ -22,7 +22,17 @@ func GetPrivateKey(path string) (*rsa.PrivateKey, error) {
 		return nil, errors.New("failed to decode PEM block containing private key")
 	}
 
-	return x509.ParsePKCS1PrivateKey(block.Bytes)
+	priv, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse public key: %v", err)
+	}
+
+	switch p := priv.(type) {
+	case *rsa.PrivateKey:
+		return p, nil
+	default:
+		return nil, fmt.Errorf("unknown public key type")
+	}
 }
 
 func Decrypt(priv *rsa.PrivateKey, data []byte) ([]byte, error) {
