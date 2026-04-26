@@ -26,9 +26,9 @@ func GetPublicKey(path string) (*rsa.PublicKey, error) {
 		return nil, fmt.Errorf("cannot parse public key: %v", err)
 	}
 
-	switch pub.(type) {
+	switch p := pub.(type) {
 	case *rsa.PublicKey:
-		return pub.(*rsa.PublicKey), nil
+		return p, nil
 	default:
 		return nil, fmt.Errorf("unknown public key type")
 	}
