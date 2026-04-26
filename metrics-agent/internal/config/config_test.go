@@ -22,6 +22,7 @@ func Test_Get(t *testing.T) {
 				PollInterval:   2,
 				HashKey:        "",
 				RateLimit:      1,
+				CryptoKeyPath:  "",
 			},
 		},
 		{
@@ -32,6 +33,7 @@ func Test_Get(t *testing.T) {
 				"POLL_INTERVAL":   "50",
 				"KEY":             "key",
 				"RATE_LIMIT":      "10",
+				"CRYPTO_KEY":      "/path/to/pub/key",
 			},
 			want: Config{
 				Addr:           "example.com:1234",
@@ -39,6 +41,7 @@ func Test_Get(t *testing.T) {
 				PollInterval:   50,
 				HashKey:        "key",
 				RateLimit:      10,
+				CryptoKeyPath:  "/path/to/pub/key",
 			},
 		},
 	}

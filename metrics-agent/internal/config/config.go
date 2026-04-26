@@ -17,6 +17,7 @@ type Config struct {
 	HashKey        string `env:"KEY"`
 	RateLimit      int    `env:"RATE_LIMIT"`
 	BufferSize     int
+	CryptoKeyPath  string `env:"CRYPTO_KEY"`
 }
 
 // Get is a single method to get all Metrics-Agent settings.
@@ -33,6 +34,7 @@ func (cfg *Config) Get() error {
 	pollInterval := fs.Int("p", 2, "Poll interval")
 	hashKey := fs.String("k", "", "Hash Key")
 	rateLimit := fs.Int("l", 1, "Rate limit")
+	cryptoKey := fs.String("crypto-key", "", "Public Key path")
 	fs.Parse(os.Args[1:])
 
 	if cfg.Addr == "" {
@@ -49,6 +51,9 @@ func (cfg *Config) Get() error {
 	}
 	if cfg.RateLimit == 0 {
 		cfg.RateLimit = *rateLimit
+	}
+	if cfg.CryptoKeyPath == "" {
+		cfg.CryptoKeyPath = *cryptoKey
 	}
 
 	return nil
