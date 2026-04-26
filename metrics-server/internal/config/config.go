@@ -20,6 +20,7 @@ type (
 		Restore         bool   `env:"RESTORE"`
 		DSN             string `env:"DATABASE_DSN"`
 		HashKey         string `env:"KEY"`
+		CryptoKeyPath   string `env:"CRYPTO_KEY"`
 	}
 	netAddress struct {
 		Host string
@@ -64,6 +65,7 @@ func (cfg *Config) Get() error {
 	fileStoragePathFlag := fs.String("f", "metrics.dmp", "File to store data. Format string, default metrics.dmp.")
 	dsnFlag := fs.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
 	hashKey := fs.String("k", "", "Hash Key")
+	cryptoKey := fs.String("crypto-key", "", "Private Key path")
 
 	fs.Parse(os.Args[1:])
 
@@ -94,6 +96,9 @@ func (cfg *Config) Get() error {
 
 	if cfg.HashKey == "" {
 		cfg.HashKey = *hashKey
+	}
+	if cfg.CryptoKeyPath == "" {
+		cfg.CryptoKeyPath = *cryptoKey
 	}
 
 	return nil

@@ -23,6 +23,7 @@ func Test_Get(t *testing.T) {
 				Restore:         true,
 				DSN:             "",
 				HashKey:         "",
+				CryptoKeyPath:   "",
 			},
 		},
 		{
@@ -34,6 +35,7 @@ func Test_Get(t *testing.T) {
 				"RESTORE":           "false",
 				"DATABASE_DSN":      "user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable",
 				"KEY":               "secret",
+				"CRYPTO_KEY":        "/path/to/private/key",
 			},
 			want: Config{
 				Addr:            "example.com:1234",
@@ -42,6 +44,7 @@ func Test_Get(t *testing.T) {
 				Restore:         false,
 				DSN:             "user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable",
 				HashKey:         "secret",
+				CryptoKeyPath:   "/path/to/private/key",
 			},
 		},
 	}

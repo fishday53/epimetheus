@@ -17,7 +17,7 @@ func GetPublicKey(path string) (*rsa.PublicKey, error) {
 	}
 
 	block, _ := pem.Decode(pemBytes)
-	if block == nil || block.Type != "PUBLIC KEY" {
+	if block == nil {
 		return nil, fmt.Errorf("failed to decode PEM block containing public key")
 	}
 
