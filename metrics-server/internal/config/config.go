@@ -111,7 +111,7 @@ func (cfg *Config) Get() error {
 		cfg.StoreInterval = *StoreInterval
 	}
 
-	if cfg.Restore == false {
+	if !cfg.Restore {
 		cfg.Restore = *Restore
 	}
 
