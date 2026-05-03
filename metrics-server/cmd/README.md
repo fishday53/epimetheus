@@ -16,3 +16,4 @@ go build -ldflags \
    "-X main.buildVersion=v1.0.0 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X 'main.buildCommit=$(git rev-parse HEAD)'" \
    -o metrics-server ./cmd/
 ```
+
