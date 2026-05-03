@@ -20,6 +20,7 @@ type AppContext struct {
 	Log     *zap.SugaredLogger
 	Cfg     *config.Config
 	PrivKey *rsa.PrivateKey
+	Stop    chan struct{}
 }
 
 // NewAppContext initializes a new AppContext.
@@ -45,6 +46,8 @@ func NewAppContext(cfg *config.Config) (*AppContext, error) {
 			return nil, fmt.Errorf("cannot get %s: %v", cfg.CryptoKeyPath, err)
 		}
 	}
+
+	a.Stop = make(chan struct{})
 
 	return &a, nil
 }

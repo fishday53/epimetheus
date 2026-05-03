@@ -251,6 +251,7 @@ func SendWorker(
 	cfg *config.Config,
 	url string,
 	jobs <-chan *metrics.Batch,
+	stopWork <-chan struct{},
 	limit *ratelimit.TokenBucketLimiter,
 ) {
 	var (
@@ -281,6 +282,9 @@ func SendWorker(
 					if err != nil {
 						log.Printf("Metric send failed. Error:%v\n", err)
 					}
+				case <-stopWork:
+					log.Printf("Agent Shutdown gracefully")
+					return
 				default:
 					break SendLoop
 				}

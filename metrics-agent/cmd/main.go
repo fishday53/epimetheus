@@ -8,7 +8,9 @@ import (
 	"metrics-agent/internal/config"
 	"metrics-agent/internal/ratelimit"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -53,8 +55,16 @@ func main() {
 
 	rateLimit := ratelimit.NewTokenBucketLimiter(ctx, cfg.RateLimit, time.Second*1)
 
+	stopWork := make(chan struct{})
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		<-sigint
+		close(stopWork)
+	}()
+
 	wg.Add(1)
-	go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2), rateLimit)
+	go agent.SendWorker(&wg, &cfg, url, agent.FanIn(ch1, ch2), stopWork, rateLimit)
 
 	wg.Wait()
 }
