@@ -17,6 +17,7 @@ import (
 	"metrics-agent/internal/crypt"
 	"metrics-agent/internal/metrics"
 	"metrics-agent/internal/ratelimit"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -74,6 +75,12 @@ func SendMetrics(url, hashKey string, pubKey *rsa.PublicKey, metric *metrics.Bat
 		req.Header.Set("Content-Encoding", "gzip")
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Hashsha256", hashHeader)
+
+		xRealIP, err := getLocalIP()
+		if err != nil {
+			return fmt.Errorf("cannot set X-Real-IP header: %v", err)
+		}
+		req.Header.Set("X-Real-IP", xRealIP)
 
 		client := &http.Client{}
 
@@ -291,4 +298,19 @@ func SendWorker(
 			}
 		}
 	}
+}
+
+func getLocalIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", fmt.Errorf("cannot list network interfaces: %v", err)
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("cannot find local IP address")
 }

@@ -22,6 +22,7 @@ type (
 		DSN             string `env:"DATABASE_DSN" json:"database_dsn"`
 		HashKey         string `env:"KEY" json:"hash_key"`
 		CryptoKeyPath   string `env:"CRYPTO_KEY" json:"crypto_key"`
+		TrustedSubnet   string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
 		ConfigPath      string `env:"CONFIG"`
 	}
 	netAddress struct {
@@ -80,6 +81,7 @@ func (cfg *Config) Get() error {
 	DSN := fs.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
 	HashKey := fs.String("k", "", "Hash Key")
 	CryptoKeyPath := fs.String("crypto-key", "", "Private Key path")
+	TrustedSubnet := fs.String("t", "", "Subnet whitelist, comma separated")
 	fs.Parse(os.Args[1:])
 
 	// replace config file options with explicit cmd-line values
@@ -99,6 +101,8 @@ func (cfg *Config) Get() error {
 			cfg.HashKey = *HashKey
 		case "crypto-key":
 			cfg.CryptoKeyPath = *CryptoKeyPath
+		case "t":
+			cfg.TrustedSubnet = *TrustedSubnet
 		}
 	})
 

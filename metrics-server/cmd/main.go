@@ -67,7 +67,7 @@ func main() {
 	server.HTTPServer(app, idleConnsClosed)
 
 	<-idleConnsClosed
-	fmt.Println("Server Shutdown gracefully")
+	app.Log.Infoln("Server Shutdown gracefully")
 }
 
 func printVal(v string) string {

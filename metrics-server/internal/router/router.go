@@ -14,6 +14,7 @@ func NewMultiplexer(app *context.AppContext) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(handlers.Logger(app))
+	r.Use(handlers.CheckAddr(app))
 	r.Use(handlers.GzipHandler(app))
 	r.Use(handlers.CryptHandler(app))
 	r.Use(handlers.HashHandler(app))
