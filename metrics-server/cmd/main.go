@@ -8,6 +8,8 @@ import (
 	"metrics-server/internal/storage"
 	"metrics-server/internal/usecase/context"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 var (
@@ -54,7 +56,18 @@ func main() {
 		go storage.Dumper(app)
 	}
 
-	server.HTTPServer(app)
+	idleConnsClosed := make(chan struct{})
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		<-sigint
+		close(app.Stop)
+	}()
+
+	server.HTTPServer(app, idleConnsClosed)
+
+	<-idleConnsClosed
+	fmt.Println("Server Shutdown gracefully")
 }
 
 func printVal(v string) string {

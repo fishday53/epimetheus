@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/hmac"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"log"
 	"math/rand/v2"
 	"metrics-agent/internal/config"
+	"metrics-agent/internal/crypt"
 	"metrics-agent/internal/metrics"
 	"metrics-agent/internal/ratelimit"
 	"net/http"
@@ -32,7 +34,7 @@ var (
 )
 
 // SendMetrics sends a signed batch of metrics via http.
-func SendMetrics(url, hashKey string, metric *metrics.Batch) error {
+func SendMetrics(url, hashKey string, pubKey *rsa.PublicKey, metric *metrics.Batch) error {
 	var hashHeader string
 
 	jsonData, err := json.Marshal(metric)
@@ -43,6 +45,13 @@ func SendMetrics(url, hashKey string, metric *metrics.Batch) error {
 
 	if hashKey != "" {
 		hashHeader = getHash(hashKey, jsonData)
+	}
+
+	if pubKey != nil {
+		jsonData, err = crypt.Encrypt(pubKey, jsonData)
+		if err != nil {
+			return fmt.Errorf("cannot encrypt jsonData: %v", err)
+		}
 	}
 
 	var buf bytes.Buffer
@@ -242,12 +251,26 @@ func SendWorker(
 	cfg *config.Config,
 	url string,
 	jobs <-chan *metrics.Batch,
+	stopWork <-chan struct{},
 	limit *ratelimit.TokenBucketLimiter,
 ) {
+	var (
+		pubKey *rsa.PublicKey
+		err    error
+	)
+
 	ticker := time.NewTicker(time.Duration(cfg.ReportInterval) * time.Second)
 	defer ticker.Stop()
 
 	defer wg.Done()
+
+	if cfg.CryptoKeyPath != "" {
+		pubKey, err = crypt.GetPublicKey(cfg.CryptoKeyPath)
+		if err != nil {
+			log.Fatalf("crypto key %s get failed:%v\n", cfg.CryptoKeyPath, err)
+			return
+		}
+	}
 
 	for range ticker.C {
 	SendLoop:
@@ -255,10 +278,13 @@ func SendWorker(
 			for limit.Allow() {
 				select {
 				case j := <-jobs:
-					err := SendMetrics(url, cfg.HashKey, j)
+					err := SendMetrics(url, cfg.HashKey, pubKey, j)
 					if err != nil {
 						log.Printf("Metric send failed. Error:%v\n", err)
 					}
+				case <-stopWork:
+					log.Printf("Agent Shutdown gracefully")
+					return
 				default:
 					break SendLoop
 				}

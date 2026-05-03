@@ -2,8 +2,10 @@
 package context
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"metrics-server/internal/config"
+	"metrics-server/internal/crypt"
 	"metrics-server/internal/log"
 	"metrics-server/internal/storage/memory"
 	"metrics-server/internal/storage/postgres"
@@ -14,9 +16,11 @@ import (
 
 // AppContext stores server-wide settings.
 type AppContext struct {
-	DB  usecase.Repository
-	Log *zap.SugaredLogger
-	Cfg *config.Config
+	DB      usecase.Repository
+	Log     *zap.SugaredLogger
+	Cfg     *config.Config
+	PrivKey *rsa.PrivateKey
+	Stop    chan struct{}
 }
 
 // NewAppContext initializes a new AppContext.
@@ -35,6 +39,15 @@ func NewAppContext(cfg *config.Config) (*AppContext, error) {
 			return nil, fmt.Errorf("cannot initialize new app context: %v", err)
 		}
 	}
+
+	if cfg.CryptoKeyPath != "" {
+		a.PrivKey, err = crypt.GetPrivateKey(cfg.CryptoKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get %s: %v", cfg.CryptoKeyPath, err)
+		}
+	}
+
+	a.Stop = make(chan struct{})
 
 	return &a, nil
 }

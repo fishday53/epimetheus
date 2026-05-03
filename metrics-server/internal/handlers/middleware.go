@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
+	"metrics-server/internal/crypt"
 	"metrics-server/internal/usecase/context"
 	"net/http"
 	"strings"
@@ -194,6 +195,34 @@ func HashHandler(app *context.AppContext) func(next http.Handler) http.Handler {
 
 			w.WriteHeader(wrapper.Status)
 			w.Write(wrapper.Body.Bytes())
+		})
+	}
+}
+
+func CryptHandler(app *context.AppContext) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			if app.PrivKey == nil || r.Body == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			ciphertext, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "cannot read body", http.StatusInternalServerError)
+				return
+			}
+			r.Body.Close()
+
+			plaintext, err := crypt.Decrypt(app.PrivKey, ciphertext)
+			if err != nil {
+				http.Error(w, "Decryption failed", http.StatusInternalServerError)
+				return
+			}
+
+			r.Body = io.NopCloser(bytes.NewBuffer(plaintext))
+			next.ServeHTTP(w, r)
 		})
 	}
 }
