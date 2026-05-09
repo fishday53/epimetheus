@@ -56,11 +56,11 @@ type GRPCTransport struct {
 }
 
 // NewTransport is a Transport construcror
-func NewTransport(cfg *config.Config, pubKey *rsa.PublicKey) (Transport, error) {
+func NewTransport(cfg *config.Config, url string, pubKey *rsa.PublicKey) (Transport, error) {
 	switch cfg.Transport {
 	case "http":
 		return &HTTPTransport{
-			endpoint: cfg.Addr,
+			endpoint: url,
 			client:   &http.Client{},
 			hashKey:  cfg.HashKey,
 			pubKey:   pubKey,
@@ -357,7 +357,7 @@ func SendWorker(
 		}
 	}
 
-	transport, err := NewTransport(cfg, pubKey)
+	transport, err := NewTransport(cfg, url, pubKey)
 	if err != nil {
 		log.Fatalf("%s transport initialization failed:%v\n", cfg.Transport, err)
 		return

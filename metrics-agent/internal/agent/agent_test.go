@@ -42,10 +42,9 @@ func Test_SendMetric(t *testing.T) {
 				pubKey *rsa.PublicKey
 				cfg    config.Config
 			)
-			cfg.Addr = server.URL
 			cfg.Transport = "http"
 
-			transport, _ := NewTransport(&cfg, pubKey)
+			transport, _ := NewTransport(&cfg, server.URL, pubKey)
 
 			gotErr := transport.SendMetrics(&metrics.Batch{&randomValue})
 			if gotErr != nil {
