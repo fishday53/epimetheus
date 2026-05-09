@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -65,7 +66,7 @@ func NewTransport(cfg *config.Config, pubKey *rsa.PublicKey) (Transport, error) 
 			pubKey:   pubKey,
 		}, nil
 	case "grpc":
-		conn, err := grpc.Dial(cfg.Addr, grpc.WithInsecure())
+		conn, err := grpc.Dial(cfg.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, err
 		}
