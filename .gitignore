@@ -34,3 +34,7 @@ go.work.sum
 example.md
 
 metrics.dmp
+
+.DS_Store
+private_key.pem
+public_key.pem

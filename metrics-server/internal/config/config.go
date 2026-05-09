@@ -24,6 +24,7 @@ type (
 		CryptoKeyPath   string `env:"CRYPTO_KEY" json:"crypto_key"`
 		TrustedSubnet   string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
 		ConfigPath      string `env:"CONFIG"`
+		Transport       string `env:"TRANSPORT" json:"transport"`
 	}
 	netAddress struct {
 		Host string
@@ -82,6 +83,7 @@ func (cfg *Config) Get() error {
 	HashKey := fs.String("k", "", "Hash Key")
 	CryptoKeyPath := fs.String("crypto-key", "", "Private Key path")
 	TrustedSubnet := fs.String("t", "", "Subnet whitelist, comma separated")
+	Transport := fs.String("x", "http", "Transport: http or grpc")
 	fs.Parse(os.Args[1:])
 
 	// replace config file options with explicit cmd-line values
@@ -103,6 +105,8 @@ func (cfg *Config) Get() error {
 			cfg.CryptoKeyPath = *CryptoKeyPath
 		case "t":
 			cfg.TrustedSubnet = *TrustedSubnet
+		case "x":
+			cfg.CryptoKeyPath = *Transport
 		}
 	})
 
@@ -110,17 +114,17 @@ func (cfg *Config) Get() error {
 	if cfg.Addr == "" {
 		cfg.Addr = Addr.String()
 	}
-
 	if cfg.StoreInterval == 0 {
 		cfg.StoreInterval = *StoreInterval
 	}
-
 	if !cfg.Restore {
 		cfg.Restore = *Restore
 	}
-
 	if cfg.FileStoragePath == "" {
 		cfg.FileStoragePath = *FileStoragePath
+	}
+	if cfg.Transport == "" {
+		cfg.Transport = *Transport
 	}
 
 	// read envs with high priority
@@ -132,7 +136,7 @@ func (cfg *Config) Get() error {
 	return nil
 }
 
-// readFromFile reads config from json changing only unspecified values
+// readFromFile reads config from json
 func (cfg *Config) readFromFile() error {
 	cfgData, err := os.ReadFile(cfg.ConfigPath)
 	if err != nil {
