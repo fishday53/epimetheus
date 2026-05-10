@@ -28,15 +28,15 @@ message GetMetricRequest {
 }
 
 message GetMetricResponse {
-    string error = 1;
+    Metric metric = 1;
+    string error  = 2;
 }
 
-message GetAllMetricsRequest {
-    Batch metrics = 1;
-}
+message GetAllMetricsRequest {}
 
 message GetAllMetricsResponse {
-    string error = 1;
+    Batch metrics = 1;
+    string error  = 2;
 }
 
 service MetricService {

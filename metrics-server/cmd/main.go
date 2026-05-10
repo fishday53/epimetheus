@@ -64,7 +64,15 @@ func main() {
 		close(app.Stop)
 	}()
 
-	server.HTTPServer(app, idleConnsClosed)
+	switch cfg.Transport {
+	case "http":
+		server.HTTPServer(app, idleConnsClosed)
+	case "grpc":
+		server.GRPCServer(app, idleConnsClosed)
+	default:
+		app.Log.Fatalf("Wrong transport conf")
+		return
+	}
 
 	<-idleConnsClosed
 	app.Log.Infoln("Server Shutdown gracefully")
