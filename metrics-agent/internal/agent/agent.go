@@ -55,7 +55,7 @@ type GRPCTransport struct {
 	client pb.MetricServiceClient
 }
 
-// NewTransport is a Transport construcror
+// NewTransport is a Transport constructor
 func NewTransport(cfg *config.Config, url string, pubKey *rsa.PublicKey) (Transport, error) {
 	switch cfg.Transport {
 	case "http":
