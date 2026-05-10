@@ -140,7 +140,7 @@ func (h *HTTPTransport) SendMetrics(metric *metrics.Batch) error {
 	return nil
 }
 
-// SendMetrics sends a signed batch of metrics via grpc.
+// SendMetrics sends a batch of metrics via grpc.
 func (g *GRPCTransport) SendMetrics(metric *metrics.Batch) error {
 	xRealIP, err := getLocalIP()
 	if err != nil {
