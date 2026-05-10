@@ -412,8 +412,12 @@ func convertToProtoBatch(batch *metrics.Batch) *pb.Batch {
 		pbMetric := &pb.Metric{
 			ID:    m.ID,
 			MType: m.MType,
-			Delta: *m.Delta,
-			Value: *m.Value,
+		}
+		switch m.MType {
+		case "gauge":
+			pbMetric.Value = *m.Value
+		case "counter":
+			pbMetric.Delta = *m.Delta
 		}
 		pbBatch.Metrics = append(pbBatch.Metrics, pbMetric)
 	}

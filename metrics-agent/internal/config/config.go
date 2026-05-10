@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/caarlos0/env/v6"
@@ -30,6 +31,8 @@ func (cfg *Config) Get() error {
 	fs := flag.NewFlagSet("metrics-agent-preread", flag.ContinueOnError)
 	fs.StringVar(&cfg.ConfigPath, "config", "", "Config file path (short: -c)")
 	fs.StringVar(&cfg.ConfigPath, "c", "", "short for -config")
+	originalOutput := fs.Output()
+	fs.SetOutput(io.Discard)
 	fs.Parse(os.Args[1:])
 
 	if config, ok := os.LookupEnv("CONFIG"); ok {
@@ -52,6 +55,7 @@ func (cfg *Config) Get() error {
 	RateLimit := fs.Int("l", 1, "Rate limit")
 	CryptoKeyPath := fs.String("crypto-key", "", "Public Key path")
 	Transport := fs.String("x", "http", "Transport: http or grpc")
+	fs.SetOutput(originalOutput)
 	fs.Parse(os.Args[1:])
 
 	// replace config file options with explicit cmd-line values

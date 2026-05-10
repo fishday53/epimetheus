@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -59,6 +60,8 @@ func (cfg *Config) Get() error {
 	fs := flag.NewFlagSet("metrics-server-preread", flag.ContinueOnError)
 	fs.StringVar(&cfg.ConfigPath, "config", "", "Config file path (short: -c)")
 	fs.StringVar(&cfg.ConfigPath, "c", "", "short for -config")
+	originalOutput := fs.Output()
+	fs.SetOutput(io.Discard)
 	fs.Parse(os.Args[1:])
 
 	if config, ok := os.LookupEnv("CONFIG"); ok {
@@ -84,6 +87,7 @@ func (cfg *Config) Get() error {
 	CryptoKeyPath := fs.String("crypto-key", "", "Private Key path")
 	TrustedSubnet := fs.String("t", "", "Subnet whitelist, comma separated")
 	Transport := fs.String("x", "http", "Transport: http or grpc")
+	fs.SetOutput(originalOutput)
 	fs.Parse(os.Args[1:])
 
 	// replace config file options with explicit cmd-line values
