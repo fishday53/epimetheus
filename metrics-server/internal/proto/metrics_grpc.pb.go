@@ -22,9 +22,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricServiceClient interface {
-	SetMultiParamGRPC(ctx context.Context, in *AddMetricsRequest, opts ...grpc.CallOption) (*AddMetricsResponse, error)
-	GetParamGRPC(ctx context.Context, in *GetMetricRequest, opts ...grpc.CallOption) (*GetMetricResponse, error)
-	GetAllParamsGRPC(ctx context.Context, in *GetAllMetricsRequest, opts ...grpc.CallOption) (*GetAllMetricsResponse, error)
+	SetMultiParam(ctx context.Context, in *SetMultiParamRequest, opts ...grpc.CallOption) (*SetMultiParamResponse, error)
+	GetParam(ctx context.Context, in *GetParamRequest, opts ...grpc.CallOption) (*GetParamResponse, error)
+	GetAllParams(ctx context.Context, in *GetAllParamsRequest, opts ...grpc.CallOption) (*GetAllParamsResponse, error)
 }
 
 type metricServiceClient struct {
@@ -35,27 +35,27 @@ func NewMetricServiceClient(cc grpc.ClientConnInterface) MetricServiceClient {
 	return &metricServiceClient{cc}
 }
 
-func (c *metricServiceClient) SetMultiParamGRPC(ctx context.Context, in *AddMetricsRequest, opts ...grpc.CallOption) (*AddMetricsResponse, error) {
-	out := new(AddMetricsResponse)
-	err := c.cc.Invoke(ctx, "/internal.MetricService/SetMultiParamGRPC", in, out, opts...)
+func (c *metricServiceClient) SetMultiParam(ctx context.Context, in *SetMultiParamRequest, opts ...grpc.CallOption) (*SetMultiParamResponse, error) {
+	out := new(SetMultiParamResponse)
+	err := c.cc.Invoke(ctx, "/internal.MetricService/SetMultiParam", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metricServiceClient) GetParamGRPC(ctx context.Context, in *GetMetricRequest, opts ...grpc.CallOption) (*GetMetricResponse, error) {
-	out := new(GetMetricResponse)
-	err := c.cc.Invoke(ctx, "/internal.MetricService/GetParamGRPC", in, out, opts...)
+func (c *metricServiceClient) GetParam(ctx context.Context, in *GetParamRequest, opts ...grpc.CallOption) (*GetParamResponse, error) {
+	out := new(GetParamResponse)
+	err := c.cc.Invoke(ctx, "/internal.MetricService/GetParam", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metricServiceClient) GetAllParamsGRPC(ctx context.Context, in *GetAllMetricsRequest, opts ...grpc.CallOption) (*GetAllMetricsResponse, error) {
-	out := new(GetAllMetricsResponse)
-	err := c.cc.Invoke(ctx, "/internal.MetricService/GetAllParamsGRPC", in, out, opts...)
+func (c *metricServiceClient) GetAllParams(ctx context.Context, in *GetAllParamsRequest, opts ...grpc.CallOption) (*GetAllParamsResponse, error) {
+	out := new(GetAllParamsResponse)
+	err := c.cc.Invoke(ctx, "/internal.MetricService/GetAllParams", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,9 +66,9 @@ func (c *metricServiceClient) GetAllParamsGRPC(ctx context.Context, in *GetAllMe
 // All implementations must embed UnimplementedMetricServiceServer
 // for forward compatibility
 type MetricServiceServer interface {
-	SetMultiParamGRPC(context.Context, *AddMetricsRequest) (*AddMetricsResponse, error)
-	GetParamGRPC(context.Context, *GetMetricRequest) (*GetMetricResponse, error)
-	GetAllParamsGRPC(context.Context, *GetAllMetricsRequest) (*GetAllMetricsResponse, error)
+	SetMultiParam(context.Context, *SetMultiParamRequest) (*SetMultiParamResponse, error)
+	GetParam(context.Context, *GetParamRequest) (*GetParamResponse, error)
+	GetAllParams(context.Context, *GetAllParamsRequest) (*GetAllParamsResponse, error)
 	mustEmbedUnimplementedMetricServiceServer()
 }
 
@@ -76,14 +76,14 @@ type MetricServiceServer interface {
 type UnimplementedMetricServiceServer struct {
 }
 
-func (UnimplementedMetricServiceServer) SetMultiParamGRPC(context.Context, *AddMetricsRequest) (*AddMetricsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetMultiParamGRPC not implemented")
+func (UnimplementedMetricServiceServer) SetMultiParam(context.Context, *SetMultiParamRequest) (*SetMultiParamResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetMultiParam not implemented")
 }
-func (UnimplementedMetricServiceServer) GetParamGRPC(context.Context, *GetMetricRequest) (*GetMetricResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetParamGRPC not implemented")
+func (UnimplementedMetricServiceServer) GetParam(context.Context, *GetParamRequest) (*GetParamResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetParam not implemented")
 }
-func (UnimplementedMetricServiceServer) GetAllParamsGRPC(context.Context, *GetAllMetricsRequest) (*GetAllMetricsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAllParamsGRPC not implemented")
+func (UnimplementedMetricServiceServer) GetAllParams(context.Context, *GetAllParamsRequest) (*GetAllParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllParams not implemented")
 }
 func (UnimplementedMetricServiceServer) mustEmbedUnimplementedMetricServiceServer() {}
 
@@ -98,56 +98,56 @@ func RegisterMetricServiceServer(s grpc.ServiceRegistrar, srv MetricServiceServe
 	s.RegisterService(&MetricService_ServiceDesc, srv)
 }
 
-func _MetricService_SetMultiParamGRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddMetricsRequest)
+func _MetricService_SetMultiParam_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetMultiParamRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetricServiceServer).SetMultiParamGRPC(ctx, in)
+		return srv.(MetricServiceServer).SetMultiParam(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/internal.MetricService/SetMultiParamGRPC",
+		FullMethod: "/internal.MetricService/SetMultiParam",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricServiceServer).SetMultiParamGRPC(ctx, req.(*AddMetricsRequest))
+		return srv.(MetricServiceServer).SetMultiParam(ctx, req.(*SetMultiParamRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MetricService_GetParamGRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetMetricRequest)
+func _MetricService_GetParam_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetParamRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetricServiceServer).GetParamGRPC(ctx, in)
+		return srv.(MetricServiceServer).GetParam(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/internal.MetricService/GetParamGRPC",
+		FullMethod: "/internal.MetricService/GetParam",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricServiceServer).GetParamGRPC(ctx, req.(*GetMetricRequest))
+		return srv.(MetricServiceServer).GetParam(ctx, req.(*GetParamRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MetricService_GetAllParamsGRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAllMetricsRequest)
+func _MetricService_GetAllParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllParamsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetricServiceServer).GetAllParamsGRPC(ctx, in)
+		return srv.(MetricServiceServer).GetAllParams(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/internal.MetricService/GetAllParamsGRPC",
+		FullMethod: "/internal.MetricService/GetAllParams",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricServiceServer).GetAllParamsGRPC(ctx, req.(*GetAllMetricsRequest))
+		return srv.(MetricServiceServer).GetAllParams(ctx, req.(*GetAllParamsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -160,16 +160,16 @@ var MetricService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MetricServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SetMultiParamGRPC",
-			Handler:    _MetricService_SetMultiParamGRPC_Handler,
+			MethodName: "SetMultiParam",
+			Handler:    _MetricService_SetMultiParam_Handler,
 		},
 		{
-			MethodName: "GetParamGRPC",
-			Handler:    _MetricService_GetParamGRPC_Handler,
+			MethodName: "GetParam",
+			Handler:    _MetricService_GetParam_Handler,
 		},
 		{
-			MethodName: "GetAllParamsGRPC",
-			Handler:    _MetricService_GetAllParamsGRPC_Handler,
+			MethodName: "GetAllParams",
+			Handler:    _MetricService_GetAllParams_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

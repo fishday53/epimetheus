@@ -22,20 +22,20 @@ func NewMetricServiceServer(app *context.AppContext) *MetricServiceServer {
 }
 
 // SetMultiParamGRPC serves incoming metric batches.
-func (s *MetricServiceServer) SetMultiParamGRPC(ctx ctx.Context, in *pb.AddMetricsRequest) (*pb.AddMetricsResponse, error) {
-	var response pb.AddMetricsResponse
+func (s *MetricServiceServer) SetMultiParam(ctx ctx.Context, in *pb.SetMultiParamRequest) (*pb.SetMultiParamResponse, error) {
+	var response pb.SetMultiParamResponse
 
 	mBatch := convertFromProtoBatch(in.Metrics)
 
 	for _, metric := range mBatch {
 		if metric.ID == "" {
 			s.app.Log.Errorln("Name is not defined")
-			return &pb.AddMetricsResponse{Error: "Name is not defined"}, status.Error(codes.InvalidArgument, "Name is not defined")
+			return &response, status.Error(codes.InvalidArgument, "Name is not defined")
 		}
 		_, err := s.app.DB.Set(metric)
 		if err != nil {
 			s.app.Log.Errorln("Cannot set metric:", err)
-			return &pb.AddMetricsResponse{Error: "Cannot set metric"}, status.Error(codes.Internal, err.Error())
+			return &response, status.Error(codes.Internal, err.Error())
 		}
 	}
 
@@ -43,7 +43,7 @@ func (s *MetricServiceServer) SetMultiParamGRPC(ctx ctx.Context, in *pb.AddMetri
 		err := s.app.DB.Dump(s.app.Cfg.FileStoragePath)
 		if err != nil {
 			s.app.Log.Errorln("Dump error:", err)
-			return &pb.AddMetricsResponse{Error: "Cannot save metric"}, status.Error(codes.Internal, err.Error())
+			return &response, status.Error(codes.Internal, err.Error())
 		}
 	}
 
@@ -52,9 +52,9 @@ func (s *MetricServiceServer) SetMultiParamGRPC(ctx ctx.Context, in *pb.AddMetri
 }
 
 // GetParamGRPC sends stored metric.
-func (s *MetricServiceServer) GetParamGRPC(ctx ctx.Context, in *pb.GetMetricRequest) (*pb.GetMetricResponse, error) {
+func (s *MetricServiceServer) GetParam(ctx ctx.Context, in *pb.GetParamRequest) (*pb.GetParamResponse, error) {
 	var (
-		response pb.GetMetricResponse
+		response pb.GetParamResponse
 		metric   *usecase.Metric
 	)
 
@@ -62,15 +62,13 @@ func (s *MetricServiceServer) GetParamGRPC(ctx ctx.Context, in *pb.GetMetricRequ
 
 	if metric.ID == "" {
 		s.app.Log.Errorln("Name is not defined")
-		response.Error = "Name is not defined"
 		return &response, status.Error(codes.InvalidArgument, "Name is not defined")
 	}
 
 	result, err := s.app.DB.Get(metric)
 	if err != nil {
 		s.app.Log.Errorln("Cannot get metric:", err)
-		response.Error = "Not found"
-		return &response, nil
+		return &response, status.Error(codes.InvalidArgument, "Not found")
 	}
 
 	response.Metric = convertToProtoMetric(result)
@@ -79,12 +77,11 @@ func (s *MetricServiceServer) GetParamGRPC(ctx ctx.Context, in *pb.GetMetricRequ
 }
 
 // GetParamGRPC sends all stored metrics.
-func (s *MetricServiceServer) GetAllParamsGRPC(ctx ctx.Context, in *pb.GetAllMetricsRequest) (*pb.GetAllMetricsResponse, error) {
-	var response pb.GetAllMetricsResponse
+func (s *MetricServiceServer) GetAllParams(ctx ctx.Context, in *pb.GetAllParamsRequest) (*pb.GetAllParamsResponse, error) {
+	var response pb.GetAllParamsResponse
 
 	result, err := s.app.DB.GetAll()
 	if err != nil {
-		response.Error = "Something went wrong"
 		s.app.Log.Errorln("Cannot get all metrics:", err)
 		return &response, status.Error(codes.Internal, err.Error())
 	}
@@ -100,8 +97,8 @@ func convertFromProtoMetric(pm *pb.Metric) *usecase.Metric {
 	}
 
 	return &usecase.Metric{
-		ID:    pm.ID,
-		MType: pm.MType,
+		ID:    pm.Id,
+		MType: pm.Mtype,
 		Delta: &pm.Delta,
 		Value: &pm.Value,
 	}
@@ -123,8 +120,8 @@ func convertFromProtoBatch(batch *pb.Batch) []*usecase.Metric {
 
 func convertToProtoMetric(m *usecase.Metric) *pb.Metric {
 	return &pb.Metric{
-		ID:    m.ID,
-		MType: m.MType,
+		Id:    m.ID,
+		Mtype: m.MType,
 		Delta: *m.Delta,
 		Value: *m.Value,
 	}

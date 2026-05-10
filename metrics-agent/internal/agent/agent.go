@@ -154,21 +154,15 @@ func (g *GRPCTransport) SendMetrics(metric *metrics.Batch) error {
 	pbBatch := convertToProtoBatch(metric)
 
 	for _, backoff := range backoffSchedule {
-		resp, err := g.client.SetMultiParamGRPC(ctx, &pb.AddMetricsRequest{
+		_, err := g.client.SetMultiParam(ctx, &pb.SetMultiParamRequest{
 			Metrics: pbBatch,
 		})
 		if err != nil {
-			log.Printf("Error in grpc-connect: %v\n", err)
+			log.Printf("Error in grpc-request: %v\n", err)
 			time.Sleep(backoff)
 			continue
 		} else {
-			if resp.Error != "" {
-				log.Printf("Error in grpc-request: %v\n", resp.Error)
-				time.Sleep(backoff)
-				continue
-			} else {
-				break
-			}
+			break
 		}
 	}
 
@@ -410,8 +404,8 @@ func convertToProtoBatch(batch *metrics.Batch) *pb.Batch {
 
 	for _, m := range *batch {
 		pbMetric := &pb.Metric{
-			ID:    m.ID,
-			MType: m.MType,
+			Id:    m.ID,
+			Mtype: m.MType,
 		}
 		switch m.MType {
 		case "gauge":

@@ -5,42 +5,38 @@ package internal;
 option go_package = "internal/proto";
 
 message Metric {
-    string ID = 1;
-    string MType = 2;
-    int64 Delta = 3;
-    double Value = 4;
+    string id = 1;
+    string mtype = 2;
+    int64  delta = 3;
+    double value = 4;
 }
 
 message Batch {
     repeated Metric metrics = 1;
 }
 
-message AddMetricsRequest {
+message SetMultiParamRequest {
     Batch metrics = 1;
 }
 
-message AddMetricsResponse {
-    string error = 1;
-}
+message SetMultiParamResponse {}
 
-message GetMetricRequest {
+message GetParamRequest {
     Metric metric = 1;
 }
 
-message GetMetricResponse {
+message GetParamResponse {
     Metric metric = 1;
-    string error  = 2;
 }
 
-message GetAllMetricsRequest {}
+message GetAllParamsRequest {}
 
-message GetAllMetricsResponse {
+message GetAllParamsResponse {
     Batch metrics = 1;
-    string error  = 2;
 }
 
 service MetricService {
-  rpc SetMultiParamGRPC(AddMetricsRequest) returns (AddMetricsResponse);
-  rpc GetParamGRPC(GetMetricRequest) returns (GetMetricResponse);
-  rpc GetAllParamsGRPC(GetAllMetricsRequest) returns (GetAllMetricsResponse);
+  rpc SetMultiParam(SetMultiParamRequest) returns (SetMultiParamResponse);
+  rpc GetParam(GetParamRequest) returns (GetParamResponse);
+  rpc GetAllParams(GetAllParamsRequest) returns (GetAllParamsResponse);
 }
