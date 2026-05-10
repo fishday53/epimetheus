@@ -26,6 +26,7 @@ func Test_Get(t *testing.T) {
 				RateLimit:      1,
 				CryptoKeyPath:  "",
 				ConfigPath:     "",
+				Transport:      "http",
 			},
 		},
 		{
@@ -38,6 +39,7 @@ func Test_Get(t *testing.T) {
 				"RATE_LIMIT":      "10",
 				"CRYPTO_KEY":      "/path/to/pub/key",
 				"CONFIG":          "",
+				"TRANSPORT":       "grpc",
 			},
 			config: "",
 			want: Config{
@@ -48,6 +50,7 @@ func Test_Get(t *testing.T) {
 				RateLimit:      10,
 				CryptoKeyPath:  "/path/to/pub/key",
 				ConfigPath:     "",
+				Transport:      "grpc",
 			},
 		},
 		{
@@ -62,7 +65,8 @@ func Test_Get(t *testing.T) {
 					"poll_interval": 100,
 					"hash_key": "key",
 					"rate_limit": 10,
-					"crypto_key": "/path/to/key.pem"
+					"crypto_key": "/path/to/key.pem",
+					"transport": "grpc"
 				}
 			`,
 			want: Config{
@@ -73,6 +77,7 @@ func Test_Get(t *testing.T) {
 				RateLimit:      10,
 				CryptoKeyPath:  "/path/to/key.pem",
 				ConfigPath:     os.TempDir() + "config-dyetegecvehyWenteekbonth6quadAys.json",
+				Transport:      "grpc",
 			},
 		},
 		{
@@ -83,6 +88,7 @@ func Test_Get(t *testing.T) {
 				"KEY":           "key",
 				"CRYPTO_KEY":    "/path/to/pub/key",
 				"CONFIG":        os.TempDir() + "config-dyetegecvehyWenteekbonth6quadAys.json",
+				"TRANSPORT":     "http",
 			},
 			config: `
 				{
@@ -90,7 +96,8 @@ func Test_Get(t *testing.T) {
 					"poll_interval": 100,
 					"hash_key": "key",
 					"rate_limit": 1000,
-					"crypto_key": "/path/to/key.pem"
+					"crypto_key": "/path/to/key.pem",
+					"transport": "grpc"
 				}
 			`,
 			want: Config{
@@ -101,6 +108,7 @@ func Test_Get(t *testing.T) {
 				RateLimit:      1000,
 				CryptoKeyPath:  "/path/to/pub/key",
 				ConfigPath:     os.TempDir() + "config-dyetegecvehyWenteekbonth6quadAys.json",
+				Transport:      "http",
 			},
 		},
 	}

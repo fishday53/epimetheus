@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -22,7 +23,9 @@ type (
 		DSN             string `env:"DATABASE_DSN" json:"database_dsn"`
 		HashKey         string `env:"KEY" json:"hash_key"`
 		CryptoKeyPath   string `env:"CRYPTO_KEY" json:"crypto_key"`
+		TrustedSubnet   string `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
 		ConfigPath      string `env:"CONFIG"`
+		Transport       string `env:"TRANSPORT" json:"transport"`
 	}
 	netAddress struct {
 		Host string
@@ -57,6 +60,8 @@ func (cfg *Config) Get() error {
 	fs := flag.NewFlagSet("metrics-server-preread", flag.ContinueOnError)
 	fs.StringVar(&cfg.ConfigPath, "config", "", "Config file path (short: -c)")
 	fs.StringVar(&cfg.ConfigPath, "c", "", "short for -config")
+	originalOutput := fs.Output()
+	fs.SetOutput(io.Discard)
 	fs.Parse(os.Args[1:])
 
 	if config, ok := os.LookupEnv("CONFIG"); ok {
@@ -80,10 +85,13 @@ func (cfg *Config) Get() error {
 	DSN := fs.String("d", "", "PostrgeSQL DSN. Format: \"user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable\"")
 	HashKey := fs.String("k", "", "Hash Key")
 	CryptoKeyPath := fs.String("crypto-key", "", "Private Key path")
+	TrustedSubnet := fs.String("t", "", "Subnet whitelist, comma separated")
+	Transport := fs.String("x", "http", "Transport: http or grpc")
+	fs.SetOutput(originalOutput)
 	fs.Parse(os.Args[1:])
 
 	// replace config file options with explicit cmd-line values
-	flag.Visit(func(f *flag.Flag) {
+	fs.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "a":
 			cfg.Addr = Addr.String()
@@ -99,6 +107,10 @@ func (cfg *Config) Get() error {
 			cfg.HashKey = *HashKey
 		case "crypto-key":
 			cfg.CryptoKeyPath = *CryptoKeyPath
+		case "t":
+			cfg.TrustedSubnet = *TrustedSubnet
+		case "x":
+			cfg.Transport = *Transport
 		}
 	})
 
@@ -106,17 +118,17 @@ func (cfg *Config) Get() error {
 	if cfg.Addr == "" {
 		cfg.Addr = Addr.String()
 	}
-
 	if cfg.StoreInterval == 0 {
 		cfg.StoreInterval = *StoreInterval
 	}
-
 	if !cfg.Restore {
 		cfg.Restore = *Restore
 	}
-
 	if cfg.FileStoragePath == "" {
 		cfg.FileStoragePath = *FileStoragePath
+	}
+	if cfg.Transport == "" {
+		cfg.Transport = *Transport
 	}
 
 	// read envs with high priority
@@ -128,7 +140,7 @@ func (cfg *Config) Get() error {
 	return nil
 }
 
-// readFromFile reads config from json changing only unspecified values
+// readFromFile reads config from json
 func (cfg *Config) readFromFile() error {
 	cfgData, err := os.ReadFile(cfg.ConfigPath)
 	if err != nil {

@@ -26,7 +26,9 @@ func Test_Get(t *testing.T) {
 				DSN:             "",
 				HashKey:         "",
 				CryptoKeyPath:   "",
+				TrustedSubnet:   "",
 				ConfigPath:      "",
+				Transport:       "http",
 			},
 		},
 		{
@@ -39,7 +41,9 @@ func Test_Get(t *testing.T) {
 				"DATABASE_DSN":      "user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable",
 				"KEY":               "secret",
 				"CRYPTO_KEY":        "/path/to/private/key",
+				"TRUSTED_SUBNET":    "10.0.0.0/8",
 				"CONFIG":            "",
+				"TRANSPORT":         "grpc",
 			},
 			config: "",
 			want: Config{
@@ -50,7 +54,9 @@ func Test_Get(t *testing.T) {
 				DSN:             "user=postgres password=secret host=localhost port=5432 dbname=mydb sslmode=disable",
 				HashKey:         "secret",
 				CryptoKeyPath:   "/path/to/private/key",
+				TrustedSubnet:   "10.0.0.0/8",
 				ConfigPath:      "",
+				Transport:       "grpc",
 			},
 		},
 		{
@@ -66,7 +72,9 @@ func Test_Get(t *testing.T) {
 					"restore": true,
 					"database_dsn": "user=myuser password=pswd host=10.0.0.1 port=6432 dbname=mydb sslmode=enable",
 					"hash_key": "mykey",
-					"crypto_key": "/path/to/key.pem"
+					"crypto_key": "/path/to/key.pem",
+					"trusted_subnet": "0.0.0.0/0",
+					"transport": "grpc"
 				}
 			`,
 			want: Config{
@@ -77,17 +85,21 @@ func Test_Get(t *testing.T) {
 				DSN:             "user=myuser password=pswd host=10.0.0.1 port=6432 dbname=mydb sslmode=enable",
 				HashKey:         "mykey",
 				CryptoKeyPath:   "/path/to/key.pem",
+				TrustedSubnet:   "0.0.0.0/0",
 				ConfigPath:      os.TempDir() + "config-slucigOmlasBigshAjBadOaweujdeng9.json",
+				Transport:       "grpc",
 			},
 		},
 		{
 			testName: "Mixed",
 			envs: map[string]string{
-				"ADDRESS":    "example.com:65000",
-				"RESTORE":    "false",
-				"KEY":        "secret",
-				"CRYPTO_KEY": "/path/to/private/key",
-				"CONFIG":     os.TempDir() + "config-slucigOmlasBigshAjBadOaweujdeng9.json",
+				"ADDRESS":        "example.com:65000",
+				"RESTORE":        "false",
+				"KEY":            "secret",
+				"CRYPTO_KEY":     "/path/to/private/key",
+				"TRUSTED_SUBNET": "10.1.0.0/16",
+				"CONFIG":         os.TempDir() + "config-slucigOmlasBigshAjBadOaweujdeng9.json",
+				"TRANSPORT":      "http",
 			},
 			config: `
 				{
@@ -95,7 +107,9 @@ func Test_Get(t *testing.T) {
 					"restore": true,
 					"database_dsn": "user=myuser password=pswd host=10.0.0.1 port=6432 dbname=mydb sslmode=enable",
 					"hash_key": "mykey",
-					"crypto_key": "/path/to/key.pem"
+					"crypto_key": "/path/to/key.pem",
+					"trusted_subnet": "192.168.1.0/24",
+					"transport": "grpc"
 				}
 			`,
 			want: Config{
@@ -106,7 +120,9 @@ func Test_Get(t *testing.T) {
 				DSN:             "user=myuser password=pswd host=10.0.0.1 port=6432 dbname=mydb sslmode=enable",
 				HashKey:         "secret",
 				CryptoKeyPath:   "/path/to/private/key",
+				TrustedSubnet:   "10.1.0.0/16",
 				ConfigPath:      os.TempDir() + "config-slucigOmlasBigshAjBadOaweujdeng9.json",
+				Transport:       "http",
 			},
 		},
 	}

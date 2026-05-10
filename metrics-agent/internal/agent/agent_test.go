@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
 	"math/rand/v2"
 	"metrics-agent/internal/config"
@@ -37,7 +38,15 @@ func Test_SendMetric(t *testing.T) {
 			server := httptest.NewServer(handler)
 			defer server.Close()
 
-			gotErr := SendMetrics(server.URL, "", nil, &metrics.Batch{&randomValue})
+			var (
+				pubKey *rsa.PublicKey
+				cfg    config.Config
+			)
+			cfg.Transport = "http"
+
+			transport, _ := NewTransport(&cfg, server.URL, pubKey)
+
+			gotErr := transport.SendMetrics(&metrics.Batch{&randomValue})
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("sendMetric() failed: %v", gotErr)

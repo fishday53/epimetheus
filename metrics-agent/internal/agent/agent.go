@@ -16,11 +16,17 @@ import (
 	"metrics-agent/internal/config"
 	"metrics-agent/internal/crypt"
 	"metrics-agent/internal/metrics"
+	pb "metrics-agent/internal/proto"
 	"metrics-agent/internal/ratelimit"
+	"net"
 	"net/http"
 	"os"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 var (
@@ -33,8 +39,48 @@ var (
 	}
 )
 
+type Transport interface {
+	SendMetrics(metric *metrics.Batch) error
+}
+
+type HTTPTransport struct {
+	endpoint string
+	client   *http.Client
+	hashKey  string
+	pubKey   *rsa.PublicKey
+}
+
+type GRPCTransport struct {
+	conn   *grpc.ClientConn
+	client pb.MetricServiceClient
+}
+
+// NewTransport is a Transport constructor
+func NewTransport(cfg *config.Config, url string, pubKey *rsa.PublicKey) (Transport, error) {
+	switch cfg.Transport {
+	case "http":
+		return &HTTPTransport{
+			endpoint: url,
+			client:   &http.Client{},
+			hashKey:  cfg.HashKey,
+			pubKey:   pubKey,
+		}, nil
+	case "grpc":
+		conn, err := grpc.Dial(cfg.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			return nil, err
+		}
+		return &GRPCTransport{
+			conn:   conn,
+			client: pb.NewMetricServiceClient(conn),
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported mode: %s", cfg.Transport)
+	}
+}
+
 // SendMetrics sends a signed batch of metrics via http.
-func SendMetrics(url, hashKey string, pubKey *rsa.PublicKey, metric *metrics.Batch) error {
+func (h *HTTPTransport) SendMetrics(metric *metrics.Batch) error {
 	var hashHeader string
 
 	jsonData, err := json.Marshal(metric)
@@ -43,12 +89,12 @@ func SendMetrics(url, hashKey string, pubKey *rsa.PublicKey, metric *metrics.Bat
 		return fmt.Errorf("error in marshaller: %v", err)
 	}
 
-	if hashKey != "" {
-		hashHeader = getHash(hashKey, jsonData)
+	if h.hashKey != "" {
+		hashHeader = getHash(h.hashKey, jsonData)
 	}
 
-	if pubKey != nil {
-		jsonData, err = crypt.Encrypt(pubKey, jsonData)
+	if h.pubKey != nil {
+		jsonData, err = crypt.Encrypt(h.pubKey, jsonData)
 		if err != nil {
 			return fmt.Errorf("cannot encrypt jsonData: %v", err)
 		}
@@ -64,7 +110,7 @@ func SendMetrics(url, hashKey string, pubKey *rsa.PublicKey, metric *metrics.Bat
 	}
 
 	for _, backoff := range backoffSchedule {
-		req, err := http.NewRequest("POST", url, &buf)
+		req, err := http.NewRequest("POST", h.endpoint, &buf)
 		if err != nil {
 			log.Printf("Error creating http-request: %v\n", err)
 			time.Sleep(backoff)
@@ -75,14 +121,47 @@ func SendMetrics(url, hashKey string, pubKey *rsa.PublicKey, metric *metrics.Bat
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Hashsha256", hashHeader)
 
-		client := &http.Client{}
+		xRealIP, err := getLocalIP()
+		if err != nil {
+			return fmt.Errorf("cannot set X-Real-IP header: %v", err)
+		}
+		req.Header.Set("X-Real-IP", xRealIP)
 
-		resp, err := client.Do(req)
+		resp, err := h.client.Do(req)
 		if err != nil {
 			log.Printf("Error posting query: %v\n", err)
 			time.Sleep(backoff)
 		} else {
 			defer resp.Body.Close()
+			break
+		}
+	}
+
+	return nil
+}
+
+// SendMetrics sends a batch of metrics via grpc.
+func (g *GRPCTransport) SendMetrics(metric *metrics.Batch) error {
+	xRealIP, err := getLocalIP()
+	if err != nil {
+		return fmt.Errorf("cannot set X-Real-IP header: %v", err)
+	}
+	md := metadata.New(map[string]string{
+		"x-real-ip": xRealIP,
+	})
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+
+	pbBatch := convertToProtoBatch(metric)
+
+	for _, backoff := range backoffSchedule {
+		_, err := g.client.SetMultiParam(ctx, &pb.SetMultiParamRequest{
+			Metrics: pbBatch,
+		})
+		if err != nil {
+			log.Printf("Error in grpc-request: %v\n", err)
+			time.Sleep(backoff)
+			continue
+		} else {
 			break
 		}
 	}
@@ -272,13 +351,19 @@ func SendWorker(
 		}
 	}
 
+	transport, err := NewTransport(cfg, url, pubKey)
+	if err != nil {
+		log.Fatalf("%s transport initialization failed:%v\n", cfg.Transport, err)
+		return
+	}
+
 	for range ticker.C {
 	SendLoop:
 		for {
 			for limit.Allow() {
 				select {
 				case j := <-jobs:
-					err := SendMetrics(url, cfg.HashKey, pubKey, j)
+					err := transport.SendMetrics(j)
 					if err != nil {
 						log.Printf("Metric send failed. Error:%v\n", err)
 					}
@@ -291,4 +376,45 @@ func SendWorker(
 			}
 		}
 	}
+}
+
+func getLocalIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", fmt.Errorf("cannot list network interfaces: %v", err)
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("cannot find local IP address")
+}
+
+func convertToProtoBatch(batch *metrics.Batch) *pb.Batch {
+	if batch == nil {
+		return nil
+	}
+
+	pbBatch := &pb.Batch{
+		Metrics: make([]*pb.Metric, 0, len(*batch)),
+	}
+
+	for _, m := range *batch {
+		pbMetric := &pb.Metric{
+			Id:    m.ID,
+			Mtype: m.MType,
+		}
+		switch m.MType {
+		case "gauge":
+			pbMetric.Value = *m.Value
+		case "counter":
+			pbMetric.Delta = *m.Delta
+		}
+		pbBatch.Metrics = append(pbBatch.Metrics, pbMetric)
+	}
+
+	return pbBatch
 }

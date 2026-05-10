@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/caarlos0/env/v6"
@@ -20,6 +21,7 @@ type Config struct {
 	BufferSize     int
 	CryptoKeyPath  string `env:"CRYPTO_KEY" json:"crypto_key"`
 	ConfigPath     string `env:"CONFIG"`
+	Transport      string `env:"TRANSPORT" json:"transport"`
 }
 
 // Get is a single method to get all Metrics-Agent settings.
@@ -29,6 +31,8 @@ func (cfg *Config) Get() error {
 	fs := flag.NewFlagSet("metrics-agent-preread", flag.ContinueOnError)
 	fs.StringVar(&cfg.ConfigPath, "config", "", "Config file path (short: -c)")
 	fs.StringVar(&cfg.ConfigPath, "c", "", "short for -config")
+	originalOutput := fs.Output()
+	fs.SetOutput(io.Discard)
 	fs.Parse(os.Args[1:])
 
 	if config, ok := os.LookupEnv("CONFIG"); ok {
@@ -50,10 +54,12 @@ func (cfg *Config) Get() error {
 	HashKey := fs.String("k", "", "Hash Key")
 	RateLimit := fs.Int("l", 1, "Rate limit")
 	CryptoKeyPath := fs.String("crypto-key", "", "Public Key path")
+	Transport := fs.String("x", "http", "Transport: http or grpc")
+	fs.SetOutput(originalOutput)
 	fs.Parse(os.Args[1:])
 
 	// replace config file options with explicit cmd-line values
-	flag.Visit(func(f *flag.Flag) {
+	fs.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "a":
 			cfg.Addr = *Addr
@@ -67,6 +73,8 @@ func (cfg *Config) Get() error {
 			cfg.RateLimit = *RateLimit
 		case "crypto-key":
 			cfg.CryptoKeyPath = *CryptoKeyPath
+		case "x":
+			cfg.Transport = *Transport
 		}
 	})
 
@@ -83,6 +91,9 @@ func (cfg *Config) Get() error {
 	if cfg.RateLimit == 0 {
 		cfg.RateLimit = *RateLimit
 	}
+	if cfg.Transport == "" {
+		cfg.Transport = *Transport
+	}
 
 	// read envs with high priority
 	err := env.Parse(cfg)
@@ -93,7 +104,7 @@ func (cfg *Config) Get() error {
 	return nil
 }
 
-// readFromFile reads config from json changing only unspecified values
+// readFromFile reads config from json
 func (cfg *Config) readFromFile() error {
 	cfgData, err := os.ReadFile(cfg.ConfigPath)
 	if err != nil {

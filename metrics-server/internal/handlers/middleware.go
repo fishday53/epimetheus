@@ -10,6 +10,7 @@ import (
 	"io"
 	"metrics-server/internal/crypt"
 	"metrics-server/internal/usecase/context"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -222,6 +223,43 @@ func CryptHandler(app *context.AppContext) func(next http.Handler) http.Handler 
 			}
 
 			r.Body = io.NopCloser(bytes.NewBuffer(plaintext))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// CheckAddr is used to check if X-Real-IP header is whitelisted.
+func CheckAddr(app *context.AppContext) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			if app.Cfg.TrustedSubnet != "" {
+				ip := net.ParseIP(r.Header.Get("X-Real-IP"))
+				if ip == nil {
+					http.Error(w, "Forbidden", http.StatusForbidden)
+					app.Log.Errorln("Invalid X-Real-IP ", r.Header.Get("X-Real-IP"))
+					return
+				}
+				whitelist := strings.Split(app.Cfg.TrustedSubnet, ",")
+				var whitelisted bool
+				for _, cidr := range whitelist {
+					_, network, err := net.ParseCIDR(cidr)
+					if err != nil {
+						http.Error(w, "Cannot check IP", http.StatusInternalServerError)
+						app.Log.Fatalln("Invalid network network in whitelist:", cidr)
+						return
+					}
+					if network.Contains(ip) {
+						whitelisted = true
+						break
+					}
+				}
+				if !whitelisted {
+					http.Error(w, "Forbidden", http.StatusForbidden)
+					app.Log.Errorf("X-Real-IP %s is not in whitelist", ip)
+					return
+				}
+			}
 			next.ServeHTTP(w, r)
 		})
 	}

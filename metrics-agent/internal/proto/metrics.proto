@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package internal;
+
+option go_package = "internal/proto";
+
+message Metric {
+    string id = 1;
+    string mtype = 2;
+    int64  delta = 3;
+    double value = 4;
+}
+
+message Batch {
+    repeated Metric metrics = 1;
+}
+
+message SetMultiParamRequest {
+    Batch metrics = 1;
+}
+
+message SetMultiParamResponse {}
+
+message GetParamRequest {
+    Metric metric = 1;
+}
+
+message GetParamResponse {
+    Metric metric = 1;
+}
+
+message GetAllParamsRequest {}
+
+message GetAllParamsResponse {
+    Batch metrics = 1;
+}
+
+service MetricService {
+  rpc SetMultiParam(SetMultiParamRequest) returns (SetMultiParamResponse);
+  rpc GetParam(GetParamRequest) returns (GetParamResponse);
+  rpc GetAllParams(GetAllParamsRequest) returns (GetAllParamsResponse);
+}
