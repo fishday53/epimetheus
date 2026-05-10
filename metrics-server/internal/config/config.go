@@ -91,7 +91,7 @@ func (cfg *Config) Get() error {
 	fs.Parse(os.Args[1:])
 
 	// replace config file options with explicit cmd-line values
-	flag.Visit(func(f *flag.Flag) {
+	fs.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "a":
 			cfg.Addr = Addr.String()
@@ -110,7 +110,7 @@ func (cfg *Config) Get() error {
 		case "t":
 			cfg.TrustedSubnet = *TrustedSubnet
 		case "x":
-			cfg.CryptoKeyPath = *Transport
+			cfg.Transport = *Transport
 		}
 	})
 

@@ -47,6 +47,7 @@ func (s *MetricServiceServer) SetMultiParamGRPC(ctx ctx.Context, in *pb.AddMetri
 		}
 	}
 
+	s.app.Log.Infof("Got %d metrics via GRPC.", len(mBatch))
 	return &response, nil
 }
 

@@ -25,7 +25,6 @@ func CheckAddr(app *context.AppContext) func(
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-
 		if app.Cfg.TrustedSubnet != "" {
 			md, ok := metadata.FromIncomingContext(ctx)
 			if !ok {
